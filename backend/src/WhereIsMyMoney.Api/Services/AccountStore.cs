@@ -5,7 +5,7 @@ using WhereIsMyMoney.Api.Models.AccountModels;
 
 namespace WhereIsMyMoney.Api
 {
-    public sealed class AccountStore(AccountDbContext db)
+    public sealed class AccountStore(AppDbContext db)
     {
         public async Task<AccountResponse?> GetAsync(long id)
         {

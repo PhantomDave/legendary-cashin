@@ -8,7 +8,7 @@ namespace WhereIsMyMoney.Api.Controllers
 {
     [ApiController]
     [Route("accounts")]
-    public sealed class AccountController(AccountStore store, TokenService tokenService) : ControllerBase
+    public sealed class AccountController(AccountStore store, TokenService tokenService) : ApiControllerBase
     {
         [HttpGet("{id:long}")]
         [ProducesResponseType<AccountResponse>(StatusCodes.Status200OK)]
