@@ -7,8 +7,6 @@ services:
       POSTGRES_DB: cashin
       POSTGRES_USER: cashin
       POSTGRES_PASSWORD: cashin_dev_password
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

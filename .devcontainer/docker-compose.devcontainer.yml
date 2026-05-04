@@ -2,11 +2,11 @@ services:
   devcontainer:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: .devcontainer/Dockerfile
     volumes:
       # Mount the whole repo into the container
-      - ..:/workspace:cached
-      # Persist NuGet & npm caches across rebuilds
+      - .:/workspace:cached
+      # Persist NuGet & Bun caches across rebuilds
       - nuget-cache:/root/.nuget
       - bun-cache:/root/.bun
     # Keep the container running

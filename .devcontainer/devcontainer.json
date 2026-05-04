@@ -7,12 +7,11 @@
   "workspaceFolder": "/workspace",
 
   // Forward the backend, frontend dev server, and the DB
-  "forwardPorts": [5000, 5001, 4200, 5432],
+  "forwardPorts": [5000, 5001, 4200],
   "portsAttributes": {
     "5000": { "label": "Backend (HTTP)",  "onAutoForward": "notify" },
     "5001": { "label": "Backend (HTTPS)", "onAutoForward": "notify" },
-    "4200": { "label": "Angular Dev Server", "onAutoForward": "openBrowser" },
-    "5432": { "label": "PostgreSQL", "onAutoForward": "silent" }
+    "4200": { "label": "Angular Dev Server", "onAutoForward": "openBrowser" }
   },
 
   // Restore dependencies on first container start

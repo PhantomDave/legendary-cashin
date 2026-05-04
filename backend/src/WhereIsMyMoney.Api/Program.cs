@@ -1,13 +1,23 @@
+using Microsoft.EntityFrameworkCore;
 using WhereIsMyMoney.Api;
+using WhereIsMyMoney.Api.Data;
 using Scalar.AspNetCore;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
-builder.Services.AddSingleton<CashinStore>();
+builder.Services.AddDbContext<AccountDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<AccountStore>();
 
-var app = builder.Build();
+WebApplication app = builder.Build();
+
+using (IServiceScope scope = app.Services.CreateScope())
+{
+    AccountDbContext db = scope.ServiceProvider.GetRequiredService<AccountDbContext>();
+    await db.Database.MigrateAsync();
+}
 
 app.MapOpenApi();
 app.MapScalarApiReference(options =>
@@ -17,7 +27,3 @@ app.MapScalarApiReference(options =>
 app.MapControllers();
 
 app.Run();
-
-
-public partial class Program;
-
