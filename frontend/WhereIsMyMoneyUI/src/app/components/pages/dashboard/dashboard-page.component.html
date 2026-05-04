@@ -1,0 +1,26 @@
+<app-section-header
+  title="Dashboard"
+  subtitle="Start with small feature pages and shared widgets; scale by domain."
+/>
+
+<section class="dashboard-grid" aria-label="Dashboard overview">
+  @for (metric of metrics; track metric.label) {
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="dashboard-card__header">
+          <span>{{ metric.label }}</span>
+          <p-tag [value]="metric.trend" [severity]="metric.severity" />
+        </div>
+      </ng-template>
+      <p class="dashboard-card__value">{{ metric.value }}</p>
+    </p-card>
+  }
+</section>
+
+<p-card header="Quick Actions">
+  <p>Wire real data sources in `core/services`, then keep each page focused on rendering.</p>
+  <div class="dashboard-actions">
+    <p-button label="Add transaction" icon="pi pi-plus" />
+    <p-button label="Import CSV" icon="pi pi-upload" severity="secondary" />
+  </div>
+</p-card>

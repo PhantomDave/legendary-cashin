@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@import "primeicons/primeicons.css";
+/* Global CSS entrypoint for Tailwind and other non-Sass styles. */
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--p-surface-50);
+  color: var(--p-surface-900);
+}
+
+* {
+  box-sizing: border-box;
+}

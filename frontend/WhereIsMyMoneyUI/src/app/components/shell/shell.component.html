@@ -1,0 +1,33 @@
+<div class="app-shell">
+  <header class="app-shell__topbar">
+    <a class="app-shell__brand" routerLink="/dashboard">Where Is My Money</a>
+
+    <nav class="app-shell__nav" aria-label="Main navigation">
+      @for (item of navItems; track item.route) {
+        <a
+          class="app-shell__link"
+          [class.app-shell__link--active]="isRouteActive(item.route)"
+          [routerLink]="item.route"
+        >
+          <i [class]="item.icon"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <p-button
+      [icon]="themeIcon()"
+      [text]="true"
+      [rounded]="true"
+      severity="secondary"
+      ariaLabel="Toggle dark mode"
+      (onClick)="toggleTheme()"
+    />
+  </header>
+
+  <main class="app-shell__content">
+    <router-outlet />
+  </main>
+</div>
+
+
