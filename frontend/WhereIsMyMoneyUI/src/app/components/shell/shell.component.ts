@@ -3,10 +3,13 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { APP_NAVIGATION_ITEMS } from '../../constants/app-navigation.config';
+import { SelectModule } from 'primeng/select';
+import { FormsModule } from '@angular/forms';
+import { Budget } from '../../models/budget/Budget';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, ButtonModule],
+  imports: [RouterOutlet, RouterLink, ButtonModule, SelectModule, FormsModule],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -14,6 +17,7 @@ import { APP_NAVIGATION_ITEMS } from '../../constants/app-navigation.config';
 export class ShellComponent {
   private readonly document = inject(DOCUMENT);
   private readonly router = inject(Router);
+  readonly selectedBudget = signal<Budget | null>(null);
 
   readonly isDarkMode = signal(false);
   readonly navItems = APP_NAVIGATION_ITEMS;

@@ -15,6 +15,13 @@
       }
     </nav>
 
+    <p-select
+      [(ngModel)]="selectedBudget"
+      optionLabel="label"
+      placeholder="Select Budget"
+      ariaLabel="Select budget"
+    />
+
     <p-button
       [icon]="themeIcon()"
       [text]="true"
@@ -29,5 +36,3 @@
     <router-outlet />
   </main>
 </div>
-
-
