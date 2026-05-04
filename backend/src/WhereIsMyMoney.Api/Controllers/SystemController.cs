@@ -1,41 +1,20 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace WhereIsMyMoney.Api.Controllers;
-
-[ApiController]
-[Route("")]
-public sealed class SystemController : ControllerBase
+namespace WhereIsMyMoney.Api.Controllers
 {
-    [HttpGet]
-    public IActionResult GetServiceInfo()
+    [ApiController]
+    [Route("")]
+    public sealed class SystemController : ControllerBase
     {
-        return Ok(new
+        [HttpGet("health")]
+        public IActionResult GetHealth()
         {
-            service = "WhereIsMyMoney.Api",
-            description = "REST API for receiving and retrieving cashin requests.",
-            endpoints = new[]
+            return Ok(new
             {
-                "GET /health",
-                "GET /cashins",
-                "GET /cashins/{id}",
-                "POST /cashins"
-            },
-            openApi = new
-            {
-                json = "/openapi/v1.json",
-                ui = "/scalar/v1"
-            }
-        });
+                status = "Healthy",
+                checkedAtUtc = DateTimeOffset.UtcNow
+            });
+        }
     }
 
-    [HttpGet("health")]
-    public IActionResult GetHealth()
-    {
-        return Ok(new
-        {
-            status = "Healthy",
-            checkedAtUtc = DateTimeOffset.UtcNow
-        });
-    }
 }
-

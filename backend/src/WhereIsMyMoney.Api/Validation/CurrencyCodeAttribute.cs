@@ -1,19 +1,20 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace WhereIsMyMoney.Api;
-
-public sealed class CurrencyCodeAttribute : ValidationAttribute
+namespace WhereIsMyMoney.Api
 {
-    protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+    public sealed class CurrencyCodeAttribute : ValidationAttribute
     {
-        if (value is not string currency || string.IsNullOrWhiteSpace(currency))
+        protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
-            return new ValidationResult("Currency is required.");
+            if (value is not string currency || string.IsNullOrWhiteSpace(currency))
+            {
+                return new ValidationResult("Currency is required.");
+            }
+
+            return currency.Trim().Length is 3
+                ? ValidationResult.Success
+                : new ValidationResult("Currency must be a 3-letter ISO code.");
         }
-
-        return currency.Trim().Length is 3
-            ? ValidationResult.Success
-            : new ValidationResult("Currency must be a 3-letter ISO code.");
     }
-}
 
+}
