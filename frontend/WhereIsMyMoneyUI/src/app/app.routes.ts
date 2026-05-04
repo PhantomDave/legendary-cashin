@@ -5,11 +5,13 @@ import { TransactionsPageComponent } from './components/pages/transactions/trans
 import { ShellComponent } from './components/shell/shell.component';
 import { RegisterPageComponent } from './components/account/register-page-component/register-page-component';
 import { LoginPageComponent } from './components/account/login-page-component/login-page-component';
+import { authGuard, guestOnlyGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   {
     path: '',
     component: ShellComponent,
+    canActivate: [authGuard],
     children: [
       {
         path: '',
@@ -31,10 +33,12 @@ export const routes: Routes = [
     children: [
       {
         path: 'register',
+        canActivate: [guestOnlyGuard],
         component: RegisterPageComponent,
       },
       {
         path: 'login',
+        canActivate: [guestOnlyGuard],
         component: LoginPageComponent,
       },
     ],

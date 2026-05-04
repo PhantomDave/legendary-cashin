@@ -1,6 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { ApiService } from './api.service';
 import { Account, AuthResponse } from '../models/Auth/Account';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root',
@@ -10,6 +11,7 @@ export class AccountService {
   readonly error = signal<string | null>(null);
   readonly user = signal<Account | null>(null);
 
+  private router: Router = inject(Router);
   private api: ApiService = inject(ApiService);
 
   async register(email: string, username: string, password: string) {
@@ -35,6 +37,7 @@ export class AccountService {
       });
       this.user.set(user!);
       cookieStore.set('authToken', user!.token);
+      this.router.navigate(['/dashboard']);
     } catch (e) {
       this.error.set((e as Error).message);
     } finally {
