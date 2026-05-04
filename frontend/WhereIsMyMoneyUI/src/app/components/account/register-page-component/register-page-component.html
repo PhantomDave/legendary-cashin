@@ -1,0 +1,61 @@
+<div class="min-h-dvh flex items-center justify-center bg-surface-50 dark:bg-surface-950 p-4">
+  <p-dialog
+    [(visible)]="visible"
+    [closable]="false"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [modal]="true"
+    [resizable]="false"
+    styleClass="w-[92vw] sm:w-[28rem] md:w-[32rem] rounded-2xl shadow-2xl"
+  >
+    <ng-template pTemplate="header">
+      <div class="w-full text-center">
+        <h2 class="text-2xl font-semibold m-0">Create account</h2>
+        <p class="text-sm text-surface-500 m-0 mt-1">Register to continue</p>
+      </div>
+    </ng-template>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-3">
+      <div>
+        <p-inputgroup>
+          <p-inputgroup-addon><i class="pi pi-user"></i></p-inputgroup-addon>
+          <input formControlName="username" pInputText placeholder="Username"/>
+        </p-inputgroup>
+        @if (isInvalid('username')) {
+          <small class="text-red-500">Username must be at least 3 characters.</small>
+        }
+      </div>
+
+      <div>
+        <p-inputgroup>
+          <p-inputgroup-addon><i class="pi pi-envelope"></i></p-inputgroup-addon>
+          <input formControlName="email" pInputText placeholder="Email"/>
+        </p-inputgroup>
+        @if (isInvalid('email')) {
+          <small class="text-red-500">Enter a valid email address.</small>
+        }
+      </div>
+
+      <div>
+        <p-password
+          formControlName="password"
+          [feedback]="false"
+          [toggleMask]="true"
+          class="w-full"
+          inputStyleClass="w-full"
+          placeholder="Password"
+        ></p-password>
+        @if (isInvalid('password')) {
+          <small class="text-red-500">Password must be at least 8 characters.</small>
+        }
+      </div>
+
+      <button class="w-full" label="Register" pButton type="submit" [disabled]="registerForm.invalid"></button>
+
+      <p class="text-center text-sm text-surface-500 m-0">
+        Already have an account?
+        <a class="font-medium cursor-pointer">Login</a>
+      </p>
+    </form>
+  </p-dialog>
+</div>
