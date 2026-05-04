@@ -1,11 +1,12 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 using WhereIsMyMoney.Api;
 using WhereIsMyMoney.Api.Data;
 using WhereIsMyMoney.Api.Services;
-using Scalar.AspNetCore;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +44,7 @@ using (IServiceScope scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
 }
 
+app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 app.MapOpenApi();
 app.MapScalarApiReference(options =>
 {

@@ -5,3 +5,4 @@ export interface Account {
 }
 
 export type CreateAccountResponse = Account;
+export type AuthResponse = Account & { token: string };

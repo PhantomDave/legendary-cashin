@@ -6,7 +6,7 @@ namespace WhereIsMyMoney.Api
     {
         [Required]
         [StringLength(100, MinimumLength = 1)]
-        public string Name { get; init; } = null!;
+        public string Username { get; init; } = null!;
 
         [Required]
         [EmailAddress]

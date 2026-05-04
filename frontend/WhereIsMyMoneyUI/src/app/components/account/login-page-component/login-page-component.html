@@ -10,12 +10,12 @@
   >
     <ng-template pTemplate="header">
       <div class="w-full text-center">
-        <h2 class="text-2xl font-semibold m-0">Create account</h2>
-        <p class="text-sm text-surface-500 m-0 mt-1">Register to continue</p>
+        <h2 class="text-2xl font-semibold m-0">Login</h2>
+        <p class="text-sm text-surface-500 m-0 mt-1">Enter your credentials to continue</p>
       </div>
     </ng-template>
 
-    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-3">
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-3">
       <div>
         <p-inputgroup>
           <p-inputgroup-addon><i class="pi pi-user"></i></p-inputgroup-addon>
@@ -23,16 +23,6 @@
         </p-inputgroup>
         @if (isInvalid('username')) {
           <small class="text-red-500">Username must be at least 3 characters.</small>
-        }
-      </div>
-
-      <div>
-        <p-inputgroup>
-          <p-inputgroup-addon><i class="pi pi-envelope"></i></p-inputgroup-addon>
-          <input formControlName="email" pInputText placeholder="Email" />
-        </p-inputgroup>
-        @if (isInvalid('email')) {
-          <small class="text-red-500">Enter a valid email address.</small>
         }
       </div>
 
@@ -52,15 +42,15 @@
 
       <button
         class="w-full"
-        label="Register"
+        label="Login"
         pButton
         type="submit"
-        [disabled]="registerForm.invalid"
+        [disabled]="loginForm.invalid"
       ></button>
 
       <p class="text-center text-sm text-surface-500 m-0">
-        Already have an account?
-        <a class="font-medium cursor-pointer" routerLink="/account/login">Login</a>
+        Don't have an account?
+        <a class="font-medium cursor-pointer" routerLink="/account/register">Register</a>
       </p>
     </form>
   </p-dialog>

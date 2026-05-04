@@ -40,10 +40,13 @@ namespace WhereIsMyMoney.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult<AuthResponse>> Authenticate([FromBody] AuthenticateRequest request)
         {
-            Account? account = await store.GetByEmailAsync(request.Email);
+            Account? account = !string.IsNullOrWhiteSpace(request.Email)
+                ? await store.GetByEmailAsync(request.Email)
+                : await store.GetByUsernameAsync(request.Username!);
+
             if (account is null || !AccountStore.VerifyPassword(request.Password, account.PasswordHash))
             {
-                return Unauthorized(new { message = "Invalid email or password." });
+                return Unauthorized(new { message = "Invalid username/email or password." });
             }
 
             string token = tokenService.GenerateToken(account);

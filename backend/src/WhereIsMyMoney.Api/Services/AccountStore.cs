@@ -19,11 +19,17 @@ namespace WhereIsMyMoney.Api
             return account is null ? null : account;
         }
 
+        public async Task<Account?> GetByUsernameAsync(string username)
+        {
+            Account? account = await db.Accounts.FirstOrDefaultAsync(a => a.Name == username);
+            return account is null ? null : account;
+        }
+
         public async Task<AccountResponse> CreateAsync(CreateAccountRequest request)
         {
             var account = new Account
             {
-                Name = request.Name,
+                Name = request.Username,
                 Email = request.Email,
                 PasswordHash = HashPassword(request.Password),
                 CreatedAtUtc = DateTimeOffset.UtcNow

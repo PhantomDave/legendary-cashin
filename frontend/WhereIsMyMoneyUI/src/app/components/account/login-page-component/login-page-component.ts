@@ -10,42 +10,41 @@ import { AccountService } from '../../../services/account.service';
 import { RouterModule } from '@angular/router';
 
 @Component({
-  selector: 'app-register-page-component',
+  selector: 'app-login-page-component',
   imports: [
+    ReactiveFormsModule,
     InputGroupModule,
     InputTextModule,
-    ReactiveFormsModule,
     InputGroupAddon,
     Dialog,
     Password,
     ButtonDirective,
     RouterModule,
   ],
-  templateUrl: './register-page-component.html',
-  styleUrl: './register-page-component.scss',
+  templateUrl: './login-page-component.html',
+  styleUrl: './login-page-component.scss',
 })
-export class RegisterPageComponent {
+export class LoginPageComponent {
   visible = true;
   private readonly formBuilder = inject(FormBuilder);
-  readonly registerForm: FormGroup = this.formBuilder.group({
+  readonly loginForm: FormGroup = this.formBuilder.group({
     username: ['', [Validators.required, Validators.minLength(3)]],
-    email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
   });
   private readonly accountService = inject(AccountService);
 
   async onSubmit(): Promise<void> {
-    if (this.registerForm.invalid) {
-      this.registerForm.markAllAsTouched();
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
       return;
     }
 
-    const { email, username, password } = this.registerForm.getRawValue();
-    await this.accountService.register(email, username, password);
+    const { username, password } = this.loginForm.getRawValue();
+    await this.accountService.login(username, password);
   }
 
-  isInvalid(controlName: 'username' | 'email' | 'password'): boolean {
-    const control = this.registerForm.get(controlName);
+  isInvalid(controlName: 'username' | 'password'): boolean {
+    const control = this.loginForm.get(controlName);
     return !!control && control.invalid && (control.touched || control.dirty);
   }
 }
