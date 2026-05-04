@@ -1,0 +1,57 @@
+{
+  "name": "Legendary Cashin",
+
+  // Extend the project's docker-compose so the Postgres DB is available
+  "dockerComposeFile": ["../docker-compose.yml", "docker-compose.devcontainer.yml"],
+  "service": "devcontainer",
+  "workspaceFolder": "/workspace",
+
+  // Forward the backend, frontend dev server, and the DB
+  "forwardPorts": [5000, 5001, 4200, 5432],
+  "portsAttributes": {
+    "5000": { "label": "Backend (HTTP)",  "onAutoForward": "notify" },
+    "5001": { "label": "Backend (HTTPS)", "onAutoForward": "notify" },
+    "4200": { "label": "Angular Dev Server", "onAutoForward": "openBrowser" },
+    "5432": { "label": "PostgreSQL", "onAutoForward": "silent" }
+  },
+
+  // Restore dependencies on first container start
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  "features": {},
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // C# / .NET
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.csharp",
+        // Angular / TypeScript
+        "angular.ng-template",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        // Docker & Compose
+        "ms-azuretools.vscode-docker",
+        // Database
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg",
+        // General
+        "EditorConfig.EditorConfig",
+        "GitHub.copilot"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[csharp]": {
+          "editor.defaultFormatter": "ms-dotnettools.csharp"
+        },
+        "dotnet.defaultSolution": "backend/CashinService.slnx",
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    },
+    "jetbrains": {
+      "backend": "Rider"
+    }
+  }
+}
+

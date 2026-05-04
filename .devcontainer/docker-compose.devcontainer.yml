@@ -1,0 +1,33 @@
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      # Mount the whole repo into the container
+      - ..:/workspace:cached
+      # Persist NuGet & npm caches across rebuilds
+      - nuget-cache:/root/.nuget
+      - bun-cache:/root/.bun
+    # Keep the container running
+    command: sleep infinity
+    environment:
+      # Make the backend point at the compose DB service
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: >-
+        Host=db;Port=5432;Database=cashin;Username=cashin;Password=cashin_dev_password
+    depends_on:
+      db:
+        condition: service_healthy
+    # Needed for .NET HTTPS dev cert
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+
+volumes:
+  nuget-cache:
+  bun-cache:
+
+
+
