@@ -1,11 +1,13 @@
 import { inject } from '@angular/core';
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { CookieService } from 'ngx-cookie-service';
 import { catchError, throwError } from 'rxjs';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
-  const token = cookieStore.get('authToken');
+  const cookieService = inject(CookieService);
+  const token = cookieService.get('authToken');
 
   const request = token
     ? req.clone({
@@ -16,7 +18,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(request).pipe(
     catchError((error: unknown) => {
       if (error instanceof HttpErrorResponse && error.status === 401) {
-        cookieStore.delete('authToken');
+        cookieService.delete('authToken');
         void router.navigate(['/account/login']);
       }
 

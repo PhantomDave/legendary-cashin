@@ -1,6 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { ApiService } from './api.service';
-import { TransactionItem } from '../models/transaction-item.model';
 import { Budget } from '../models/budget/Budget';
 
 @Injectable({
@@ -14,14 +13,16 @@ export class BudgetService {
   private readonly api = inject(ApiService);
   private readonly baseApiUrl = '/budgets/';
 
-  async getBudgets(): Promise<void> {
+  async getBudgets(): Promise<Budget[] | null> {
     this.isLoading.set(true);
     this.error.set(null);
     try {
       const result = await this.api.get<Budget[]>(this.baseApiUrl, undefined, true);
       this.budgets.set(result);
+      return result;
     } catch (e) {
       this.error.set((e as Error).message);
+      return null;
     } finally {
       this.isLoading.set(false);
     }

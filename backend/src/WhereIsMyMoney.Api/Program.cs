@@ -44,7 +44,11 @@ using (IServiceScope scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
 }
 
-app.UseCors(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+app.UseCors(policy => policy
+    .WithOrigins("http://localhost:4200")
+    .AllowAnyMethod()
+    .AllowAnyHeader()
+    .AllowCredentials());
 app.MapOpenApi();
 app.MapScalarApiReference(options =>
 {

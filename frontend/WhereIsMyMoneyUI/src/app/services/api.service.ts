@@ -95,7 +95,7 @@ export class ApiService {
       headers = headers.set('Content-Type', 'application/json');
     }
 
-    const jwt = this.cookieService.get('jwt_session');
+    const jwt = this.cookieService.get('authToken');
 
     if (withCredentials) {
       if (!jwt) {
