@@ -2,14 +2,17 @@
   "name": "Legendary Cashin",
 
   // Extend the project's docker-compose so the Postgres DB is available
-  "dockerComposeFile": ["../docker-compose.yml", "docker-compose.devcontainer.yml"],
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "docker-compose.devcontainer.yml"
+  ],
   "service": "devcontainer",
   "workspaceFolder": "/workspace",
 
   // Forward the backend, frontend dev server, and the DB
   "forwardPorts": [5000, 5001, 4200],
   "portsAttributes": {
-    "5000": { "label": "Backend (HTTP)",  "onAutoForward": "notify" },
+    "5000": { "label": "Backend (HTTP)", "onAutoForward": "notify" },
     "5001": { "label": "Backend (HTTPS)", "onAutoForward": "notify" },
     "4200": { "label": "Angular Dev Server", "onAutoForward": "openBrowser" }
   },
@@ -49,8 +52,11 @@
       }
     },
     "jetbrains": {
-      "backend": "Rider"
+      "plugins": [
+        "com.github.copilot",
+        "com.intellij.database",
+        "com.intellij.docker"
+      ]
     }
   }
 }
-

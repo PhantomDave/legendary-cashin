@@ -2,7 +2,7 @@ import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter } from '@angular/router';
-import Aura from '@primeuix/themes/aura';
+import Material from '@primeuix/themes/material';
 import { providePrimeNG } from 'primeng/config';
 
 import { authInterceptor } from './interceptors/auth.interceptor';
@@ -17,7 +17,7 @@ export const appConfig: ApplicationConfig = {
     providePrimeNG({
       ripple: true,
       theme: {
-        preset: Aura,
+        preset: Material,
         options: {
           darkModeSelector: '.app-dark',
         },
