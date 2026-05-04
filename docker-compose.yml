@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: legendary-cashin-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cashin
+      POSTGRES_USER: cashin
+      POSTGRES_PASSWORD: cashin_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cashin -d cashin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  pgdata:
+
