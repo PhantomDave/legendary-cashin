@@ -28,6 +28,7 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
     {
         return await db.Transactions
             .Where(t => t.BudgetId == budgetId && t.AccountId == accountId)
+            .OrderByDescending(t => t.Date)
             .Select(t => ToResponse(t))
             .ToListAsync();
     }
