@@ -19,6 +19,14 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
             .ToListAsync();
     }
 
+    public async Task<IReadOnlyList<TransactionResponse>> GetByBudgetAsync(int budgetId, long accountId)
+    {
+        return await db.Transactions
+            .Where(t => t.BudgetId == budgetId && t.AccountId == accountId)
+            .Select(t => ToResponse(t))
+            .ToListAsync();
+    }
+
     public async Task<IReadOnlyList<TransactionResponse>> GetByAccountAsync(long accountId)
     {
         return await db.Transactions

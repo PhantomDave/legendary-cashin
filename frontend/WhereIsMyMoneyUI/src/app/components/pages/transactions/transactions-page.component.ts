@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/cor
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { SectionHeaderComponent } from '../../section-header/section-header.component';
+import { TransactionService } from '../../../services/transaction.service';
 
 @Component({
   selector: 'app-transactions-page',
@@ -10,4 +11,10 @@ import { SectionHeaderComponent } from '../../section-header/section-header.comp
   styleUrl: './transactions-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TransactionsPageComponent {}
+export class TransactionsPageComponent implements OnInit {
+  private readonly transactionService = inject(TransactionService);
+
+  async ngOnInit(): Promise<void> {
+    await this.transactionService.getTransactions();
+  }
+}

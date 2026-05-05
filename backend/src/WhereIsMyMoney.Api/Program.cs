@@ -17,6 +17,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<AccountStore>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<BudgetStore>();
+builder.Services.AddScoped<TransactionStore>();
+builder.Services.AddScoped<CategoryStore>();
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

@@ -12,5 +12,7 @@ namespace WhereIsMyMoney.Api.Models.TransactionModels
         [Required]
         public DateTime Date { get; set; }
         public List<int> CategoryIds { get; set; } = [];
+        [Required]
+        public long BudgetId { get; set; }
     }
 }

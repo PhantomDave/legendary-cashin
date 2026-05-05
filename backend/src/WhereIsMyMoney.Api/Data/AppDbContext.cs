@@ -57,6 +57,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                   .WithMany()
                   .HasForeignKey(e => e.AccountId)
                   .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<Budget>()
+              .WithMany()
+              .HasForeignKey(e => e.BudgetId)
+              .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

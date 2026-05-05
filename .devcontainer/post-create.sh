@@ -4,6 +4,9 @@ set -e
 echo "==> Restoring .NET packages..."
 dotnet restore /workspace/backend/CashinService.slnx
 
+echo "==> Installing dotnet tools..."
+dotnet tool install --global dotnet-ef
+
 echo "==> Installing frontend root packages..."
 cd /workspace/frontend
 bun install
