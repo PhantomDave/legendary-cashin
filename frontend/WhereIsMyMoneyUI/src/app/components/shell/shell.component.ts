@@ -31,19 +31,21 @@ import { CreateBudgetComponent } from './create-budget-component/create-budget-c
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ShellComponent implements OnInit {
-  private readonly document = inject(DOCUMENT);
-  private readonly router = inject(Router);
-  private readonly budgetService = inject(BudgetService);
-  readonly selectedBudget = signal<Budget | null>(null);
-  readonly budgets = this.budgetService.budgets;
-
   readonly isDarkMode = signal(false);
   readonly navItems = APP_NAVIGATION_ITEMS;
   readonly themeIcon = computed(() => (this.isDarkMode() ? 'pi pi-moon' : 'pi pi-sun'));
   isCreateModalVisible: boolean = false;
+  private readonly document = inject(DOCUMENT);
+  private readonly router = inject(Router);
+  private readonly budgetService = inject(BudgetService);
+  readonly selectedBudget = this.budgetService.selectedBudget;
+  readonly budgets = this.budgetService.budgets;
 
   async ngOnInit(): Promise<void> {
     const budgets = await this.budgetService.getBudgets();
+    if (!this.selectedBudget() && budgets && budgets.length > 0) {
+      this.budgetService.selectedBudget.set(budgets[0]);
+    }
     if (budgets && budgets.length == 0) {
       this.isCreateModalVisible = true;
     }
@@ -64,6 +66,6 @@ export class ShellComponent implements OnInit {
   }
 
   onChange(selectedBudget: Budget): void {
-    this.selectedBudget.set(selectedBudget);
+    this.budgetService.selectedBudget.set(selectedBudget);
   }
 }

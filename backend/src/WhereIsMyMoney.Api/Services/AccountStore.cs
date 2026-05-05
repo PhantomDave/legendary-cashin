@@ -2,74 +2,109 @@ using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using WhereIsMyMoney.Api.Data;
 using WhereIsMyMoney.Api.Models.AccountModels;
+using WhereIsMyMoney.Api.Services;
 
-namespace WhereIsMyMoney.Api
+namespace WhereIsMyMoney.Api;
+
+public sealed class AccountStore(AppDbContext db) : IStore<AccountResponse>
 {
-    public sealed class AccountStore(AppDbContext db)
+    public async Task<AccountResponse?> GetAsync(long id)
     {
-        public async Task<AccountResponse?> GetAsync(long id)
+        Account? account = await db.Accounts.FindAsync(id);
+        return account is null ? null : ToResponse(account);
+    }
+
+    public async Task<IReadOnlyList<AccountResponse>> GetAllAsync()
+    {
+        return await db.Accounts
+            .Select(a => ToResponse(a))
+            .ToListAsync();
+    }
+
+    public async Task<Account?> GetByEmailAsync(string email)
+    {
+        Account? account = await db.Accounts.FirstOrDefaultAsync(a => a.Email == email);
+        return account is null ? null : account;
+    }
+
+    public async Task<Account?> GetByUsernameAsync(string username)
+    {
+        Account? account = await db.Accounts.FirstOrDefaultAsync(a => a.Name == username);
+        return account is null ? null : account;
+    }
+
+    public async Task<AccountResponse> CreateAsync(CreateAccountRequest request)
+    {
+        var account = new Account
         {
-            Account? account = await db.Accounts.FindAsync(id);
-            return account is null ? null : ToResponse(account);
-        }
+            Name = request.Username,
+            Email = request.Email,
+            PasswordHash = HashPassword(request.Password),
+            CreatedAtUtc = DateTimeOffset.UtcNow
+        };
 
-        public async Task<Account?> GetByEmailAsync(string email)
-        {
-            Account? account = await db.Accounts.FirstOrDefaultAsync(a => a.Email == email);
-            return account is null ? null : account;
-        }
+        db.Accounts.Add(account);
+        await db.SaveChangesAsync();
 
-        public async Task<Account?> GetByUsernameAsync(string username)
-        {
-            Account? account = await db.Accounts.FirstOrDefaultAsync(a => a.Name == username);
-            return account is null ? null : account;
-        }
+        return ToResponse(account);
+    }
 
-        public async Task<AccountResponse> CreateAsync(CreateAccountRequest request)
-        {
-            var account = new Account
-            {
-                Name = request.Username,
-                Email = request.Email,
-                PasswordHash = HashPassword(request.Password),
-                CreatedAtUtc = DateTimeOffset.UtcNow
-            };
+    async Task<AccountResponse> IStore<AccountResponse>.CreateAsync(AccountResponse value)
+    {
+        throw new NotSupportedException("Use CreateAsync(CreateAccountRequest) instead");
+    }
 
-            db.Accounts.Add(account);
-            await db.SaveChangesAsync();
+    public async Task<bool> UpdateAsync(long id, AccountResponse value)
+    {
+        Account? account = await db.Accounts.FindAsync(id);
+        if (account is null) return false;
 
-            return ToResponse(account);
-        }
+        account.Name = value.Name;
+        account.Email = value.Email;
 
-        internal static AccountResponse ToResponse(Account account) =>
-            new(account.Id, account.Name, account.Email);
+        db.Accounts.Update(account);
+        await db.SaveChangesAsync();
+        return true;
+    }
 
-        private static string HashPassword(string password)
-        {
-            const int saltSize = 16;       // 128-bit salt
-            const int hashSize = 32;       // 256-bit derived key
-            const int iterations = 350_000; // OWASP recommended minimum for PBKDF2-HMAC-SHA256
+    public async Task<bool> DeleteAsync(long id)
+    {
+        Account? account = await db.Accounts.FindAsync(id);
+        if (account is null) return false;
 
-            var salt = RandomNumberGenerator.GetBytes(saltSize);
-            var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, hashSize);
+        db.Accounts.Remove(account);
+        await db.SaveChangesAsync();
+        return true;
+    }
 
-            // Format: {iterations}${algorithm}${base64(salt)}${base64(hash)}
-            return $"{iterations}$SHA256${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
-        }
+    internal static AccountResponse ToResponse(Account account) =>
+        new(account.Id, account.Name, account.Email);
 
-        public static bool VerifyPassword(string password, string passwordHash)
-        {
-            var parts = passwordHash.Split('$');
-            if (parts.Length != 4) return false;
+    private static string HashPassword(string password)
+    {
+        const int saltSize = 16;       // 128-bit salt
+        const int hashSize = 32;       // 256-bit derived key
+        const int iterations = 350_000; // OWASP recommended minimum for PBKDF2-HMAC-SHA256
 
-            if (!int.TryParse(parts[0], out var iterations)) return false;
-            var algorithm = new HashAlgorithmName(parts[1]);
-            var salt = Convert.FromBase64String(parts[2]);
-            var expectedHash = Convert.FromBase64String(parts[3]);
+        var salt = RandomNumberGenerator.GetBytes(saltSize);
+        var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, hashSize);
 
-            var actualHash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, algorithm, expectedHash.Length);
+        // Format: {iterations}${algorithm}${base64(salt)}${base64(hash)}
+        return $"{iterations}$SHA256${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
+    }
 
-            return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
-        }
+    public static bool VerifyPassword(string password, string passwordHash)
+    {
+        var parts = passwordHash.Split('$');
+        if (parts.Length != 4) return false;
+
+        if (!int.TryParse(parts[0], out var iterations)) return false;
+        var algorithm = new HashAlgorithmName(parts[1]);
+        var salt = Convert.FromBase64String(parts[2]);
+        var expectedHash = Convert.FromBase64String(parts[3]);
+
+        var actualHash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, algorithm, expectedHash.Length);
+
+        return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
     }
 }

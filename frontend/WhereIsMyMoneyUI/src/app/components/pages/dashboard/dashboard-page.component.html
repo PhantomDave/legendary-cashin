@@ -4,7 +4,7 @@
 />
 
 <section class="dashboard-grid" aria-label="Dashboard overview">
-  @for (metric of metrics; track metric.label) {
+  @for (metric of metrics(); track metric.label) {
     <p-card>
       <ng-template pTemplate="header">
         <div class="dashboard-card__header">
@@ -12,7 +12,13 @@
           <p-tag [value]="metric.trend" [severity]="metric.severity" />
         </div>
       </ng-template>
-      <p class="dashboard-card__value">{{ metric.value }}</p>
+      <p class="dashboard-card__value">
+        {{
+          metric.isCurrency
+            ? (metric.value | currency: selectedBudget()?.defaultCurrency)
+            : metric.value
+        }}
+      </p>
     </p-card>
   }
 </section>
