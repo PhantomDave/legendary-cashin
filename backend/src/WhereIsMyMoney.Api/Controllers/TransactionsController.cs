@@ -8,6 +8,20 @@ namespace WhereIsMyMoney.Api.Controllers;
 [Route("transactions")]
 public sealed class TransactionsController(TransactionStore store, BudgetStore budgetStore) : ApiControllerBase
 {
+    [HttpGet("metrics")]
+    [ProducesResponseType<TransactionMetricsResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<TransactionMetricsResponse>> GetMetrics([FromQuery] long budgetId)
+    {
+        long accountId = GetAccountId();
+
+        bool budgetBelongsToAccount = await store.BudgetBelongsToAccountAsync(budgetId, accountId);
+        if (!budgetBelongsToAccount)
+            return BadRequest(new { message = $"Budget '{budgetId}' is invalid for this account." });
+
+        return Ok(await store.GetMetricsAsync(accountId, budgetId));
+    }
+
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<TransactionResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<TransactionResponse>>> GetMyTransactions()

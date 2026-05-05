@@ -1,5 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Transaction } from '../models/transaction/Transaction';
+import { TransactionMetrics } from '../models/transaction/TransactionMetrics';
 import { ApiService } from './api.service';
 
 @Injectable({
@@ -9,9 +10,27 @@ export class TransactionService {
   readonly isLoading = signal(false);
   readonly error = signal<string | null>(null);
   readonly transactions = signal<Transaction[]>([]);
+  readonly metrics = signal<TransactionMetrics | null>(null);
 
   private readonly api = inject(ApiService);
   private readonly baseApiUrl = '/transactions/';
+
+  async getMetrics(budgetId: number): Promise<TransactionMetrics | null> {
+    this.isLoading.set(true);
+    this.error.set(null);
+    try {
+      const result = await this.api.get<TransactionMetrics>(
+        `${this.baseApiUrl}metrics?budgetId=${budgetId}`,
+      );
+      this.metrics.set(result);
+      return result;
+    } catch {
+      this.error.set('Failed to load transaction metrics.');
+      return null;
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
 
   async getTransactions(): Promise<Transaction[] | null> {
     this.isLoading.set(true);
