@@ -1,4 +1,4 @@
-import { Component, inject, input, model } from '@angular/core';
+import { Component, inject, model, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -26,6 +26,7 @@ import { Transaction } from '../../models/transaction/Transaction';
 })
 export class CreateTransactionComponent {
   visible = model<boolean>(false);
+  readonly transactionCreated = output<Transaction>();
   readonly formBuilder = inject(FormBuilder);
   private readonly transactionService = inject(TransactionService);
   private readonly budgetService = inject(BudgetService);
@@ -51,6 +52,7 @@ export class CreateTransactionComponent {
       } as Omit<Transaction, 'id'>;
       this.transactionService.createTransaction(transactionData).then((created) => {
         if (created) {
+          this.transactionCreated.emit(created);
           this.transactionForm.reset();
           this.visible.set(false);
         }

@@ -61,4 +61,8 @@ export class TransactionService {
       this.isLoading.set(false);
     }
   }
+
+  clearTransactions(): void {
+    this.transactions.set([]);
+  }
 }
