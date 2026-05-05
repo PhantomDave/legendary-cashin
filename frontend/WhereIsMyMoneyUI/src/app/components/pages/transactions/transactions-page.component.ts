@@ -5,10 +5,18 @@ import { SectionHeaderComponent } from '../../section-header/section-header.comp
 import { TransactionService } from '../../../services/transaction.service';
 import { CreateTransactionComponent } from '../../create-transaction-component/create-transaction-component';
 import { BudgetService } from '../../../services/budget.service';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 
 @Component({
   selector: 'app-transactions-page',
-  imports: [TableModule, TagModule, SectionHeaderComponent, CreateTransactionComponent],
+  imports: [
+    TableModule,
+    TagModule,
+    SectionHeaderComponent,
+    CreateTransactionComponent,
+    CurrencyPipe,
+    DatePipe,
+  ],
   templateUrl: './transactions-page.component.html',
   styleUrl: './transactions-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

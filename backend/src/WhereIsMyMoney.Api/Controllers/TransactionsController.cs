@@ -6,7 +6,7 @@ namespace WhereIsMyMoney.Api.Controllers;
 
 [ApiController]
 [Route("transactions")]
-public sealed class TransactionsController(TransactionStore store) : ApiControllerBase
+public sealed class TransactionsController(TransactionStore store, BudgetStore budgetStore) : ApiControllerBase
 {
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<TransactionResponse>>(StatusCodes.Status200OK)]
@@ -44,6 +44,8 @@ public sealed class TransactionsController(TransactionStore store) : ApiControll
         }
 
         var transaction = await store.CreateAsync(request);
+        await budgetStore.UpdateBudgetAmount(transaction.BudgetId, request.Amount);
+
         return CreatedAtAction(nameof(GetByBudget), new { id = transaction.BudgetId }, transaction);
     }
 }

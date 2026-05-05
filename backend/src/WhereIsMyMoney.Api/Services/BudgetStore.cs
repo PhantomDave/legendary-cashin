@@ -85,6 +85,18 @@ public sealed class BudgetStore(AppDbContext db) : IStore<BudgetResponse, Budget
         return ToResponse(budget);
     }
 
+    public async Task<bool> UpdateBudgetAmount(long budgetId, decimal amount)
+    {
+        Budget? budget = await db.Budgets.FindAsync(budgetId);
+        if (budget is null) return false;
+
+        budget.Amount += amount;
+
+        db.Budgets.Update(budget);
+        await db.SaveChangesAsync();
+        return true;
+    }
+
     internal static BudgetResponse ToResponse(Budget budget) =>
         new(budget.Id, budget.AccountId, budget.Name, budget.DefaultCurrency, budget.Amount, budget.CreatedAtUtc);
 }
