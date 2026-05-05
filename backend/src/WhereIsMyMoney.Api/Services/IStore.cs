@@ -1,10 +1,13 @@
 namespace WhereIsMyMoney.Api.Services;
 
-public interface IStore<T> where T : class
+public interface IStore<TResponse, TCreate, TUpdate>
+    where TResponse : class
+    where TCreate : class
+    where TUpdate : class
 {
-    Task<T?> GetAsync(long id);
-    Task<IReadOnlyList<T>> GetAllAsync();
-    Task<T> CreateAsync(T value);
-    Task<bool> UpdateAsync(long id, T value);
+    Task<TResponse?> GetAsync(long id);
+    Task<IReadOnlyList<TResponse>> GetAllAsync();
+    Task<TResponse> CreateAsync(TCreate value);
+    Task<bool> UpdateAsync(long id, TUpdate value);
     Task<bool> DeleteAsync(long id);
 }

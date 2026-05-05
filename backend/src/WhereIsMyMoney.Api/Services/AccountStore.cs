@@ -6,7 +6,7 @@ using WhereIsMyMoney.Api.Services;
 
 namespace WhereIsMyMoney.Api;
 
-public sealed class AccountStore(AppDbContext db) : IStore<AccountResponse>
+public sealed class AccountStore(AppDbContext db) : IStore<AccountResponse, CreateAccountRequest, AccountResponse>
 {
     public async Task<AccountResponse?> GetAsync(long id)
     {
@@ -47,11 +47,6 @@ public sealed class AccountStore(AppDbContext db) : IStore<AccountResponse>
         await db.SaveChangesAsync();
 
         return ToResponse(account);
-    }
-
-    async Task<AccountResponse> IStore<AccountResponse>.CreateAsync(AccountResponse value)
-    {
-        throw new NotSupportedException("Use CreateAsync(CreateAccountRequest) instead");
     }
 
     public async Task<bool> UpdateAsync(long id, AccountResponse value)

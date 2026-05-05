@@ -4,7 +4,7 @@ using WhereIsMyMoney.Api.Models.TransactionModels;
 
 namespace WhereIsMyMoney.Api.Services;
 
-public sealed class TransactionStore(AppDbContext db) : IStore<TransactionResponse>
+public sealed class TransactionStore(AppDbContext db) : IStore<TransactionResponse, CreateTransactionRequest, UpdateTransactionRequest>
 {
     public async Task<TransactionResponse?> GetAsync(long id)
     {
@@ -51,7 +51,7 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
             .ToListAsync();
     }
 
-    public async Task<TransactionResponse> CreateAsync(TransactionResponse value)
+    public async Task<TransactionResponse> CreateAsync(CreateTransactionRequest value)
     {
         var transaction = new Transaction
         {
@@ -72,7 +72,7 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
         return ToResponse(transaction);
     }
 
-    public async Task<bool> UpdateAsync(long id, TransactionResponse value)
+    public async Task<bool> UpdateAsync(long id, UpdateTransactionRequest value)
     {
         Transaction? transaction = await db.Transactions.FindAsync(id);
         if (transaction is null) return false;
@@ -88,7 +88,7 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
         else
         {
             transaction.Categories = await db.Categories
-                .Where(c => value.CategoryIds.Contains(c.Id) && c.AccountId == value.AccountId)
+                .Where(c => value.CategoryIds.Contains(c.Id) && c.AccountId == transaction.AccountId)
                 .ToListAsync();
         }
 
@@ -108,5 +108,5 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
     }
 
     internal static TransactionResponse ToResponse(Transaction transaction) =>
-        new(transaction.Id, transaction.AccountId, transaction.Description, transaction.Amount, transaction.Date, transaction.Categories.Select(c => c.Id).ToList());
+        new(transaction.Id, transaction.AccountId, transaction.Description, transaction.Amount, transaction.Date, transaction.BudgetId, transaction.Categories.Select(c => c.Id).ToList());
 }

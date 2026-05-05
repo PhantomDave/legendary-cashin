@@ -4,7 +4,7 @@ using WhereIsMyMoney.Api.Models.CategoryModels;
 
 namespace WhereIsMyMoney.Api.Services;
 
-public sealed class CategoryStore(AppDbContext db) : IStore<CategoryResponse>
+public sealed class CategoryStore(AppDbContext db) : IStore<CategoryResponse, CategoryResponse, CategoryResponse>
 {
     public async Task<CategoryResponse?> GetAsync(long id)
     {

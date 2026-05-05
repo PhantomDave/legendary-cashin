@@ -6,5 +6,6 @@ public record TransactionResponse(
     string Description,
     decimal Amount,
     DateTime Date,
+    long BudgetId,
     List<int> CategoryIds
 );

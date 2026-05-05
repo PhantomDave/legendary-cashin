@@ -33,15 +33,8 @@ public sealed class TransactionsController(TransactionStore store) : ApiControll
     [ProducesResponseType<TransactionResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<TransactionResponse>> CreateTransaction(CreateTransactionRequest request)
     {
-        long accountId = GetAccountId();
-        var transaction = await store.CreateAsync(new TransactionResponse
-        {
-            AccountId = accountId,
-            Description = request.Description,
-            Amount = request.Amount,
-            Date = request.Date,
-            BudgetId = request.BudgetId,
-            Categories = request.Categories
-        });
+        request.AccountId = GetAccountId();
+        var transaction = await store.CreateAsync(request);
         return CreatedAtAction(nameof(GetByBudget), new { id = transaction.BudgetId }, transaction);
     }
+}

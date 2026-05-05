@@ -4,7 +4,7 @@ using WhereIsMyMoney.Api.Models.BudgetModels;
 
 namespace WhereIsMyMoney.Api.Services;
 
-public sealed class BudgetStore(AppDbContext db) : IStore<BudgetResponse>
+public sealed class BudgetStore(AppDbContext db) : IStore<BudgetResponse, BudgetResponse, BudgetResponse>
 {
     public async Task<BudgetResponse?> GetAsync(long id)
     {

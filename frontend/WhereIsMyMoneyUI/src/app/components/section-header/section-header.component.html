@@ -1,7 +1,11 @@
-<header class="section-header">
-  <h1 class="section-header__title">{{ title() }}</h1>
-  @if (subtitle()) {
-    <p class="section-header__subtitle">{{ subtitle() }}</p>
+<header class="section-header flex items-center justify-between mb-4">
+  <div>
+    <h1 class="section-header__title">{{ title() }}</h1>
+    @if (subtitle()) {
+      <p class="section-header__subtitle">{{ subtitle() }}</p>
+    }
+  </div>
+  @if (ctaText() && ctaClick()) {
+    <p-button class="section-header__cta" (click)="ctaClick()">{{ ctaText() }}</p-button>
   }
 </header>
-

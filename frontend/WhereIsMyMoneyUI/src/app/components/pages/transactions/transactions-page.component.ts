@@ -13,8 +13,12 @@ import { TransactionService } from '../../../services/transaction.service';
 })
 export class TransactionsPageComponent implements OnInit {
   private readonly transactionService = inject(TransactionService);
-
+  readonly transactions = this.transactionService.transactions;
   async ngOnInit(): Promise<void> {
     await this.transactionService.getTransactions();
+  }
+
+  addTransaction(): () => void {
+    throw new Error('Method not implemented.');
   }
 }

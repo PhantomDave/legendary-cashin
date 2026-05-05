@@ -46,4 +46,19 @@ export class TransactionService {
       this.isLoading.set(false);
     }
   }
+
+  async createTransaction(transaction: Omit<Transaction, 'id'>): Promise<Transaction | null> {
+    this.isLoading.set(true);
+    this.error.set(null);
+    try {
+      const createdTransaction = await this.api.post<Transaction>(this.baseApiUrl, transaction);
+      this.transactions.update((current) => [...current, createdTransaction]);
+      return createdTransaction;
+    } catch (error) {
+      this.error.set('Failed to create transaction.');
+      return null;
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
 }

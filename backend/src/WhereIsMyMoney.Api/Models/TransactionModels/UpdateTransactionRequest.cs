@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace WhereIsMyMoney.Api.Models.TransactionModels
 {
-    public class CreateTransactionRequest
+    public class UpdateTransactionRequest
     {
         [Required]
         [StringLength(256, MinimumLength = 3)]
@@ -12,9 +12,5 @@ namespace WhereIsMyMoney.Api.Models.TransactionModels
         [Required]
         public DateTime Date { get; set; }
         public List<int> CategoryIds { get; set; } = [];
-        [Required]
-        public long BudgetId { get; set; }
-        [System.Text.Json.Serialization.JsonIgnore]
-        public long AccountId { get; set; }
     }
 }

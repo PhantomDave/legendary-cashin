@@ -1,13 +1,15 @@
 <app-section-header
   title="Transactions"
   subtitle="A feature page owns its table, filters, and orchestration."
+  ctaText="Add Transaction"
+  [ctaClick]="addTransaction"
 />
 
-<p-table [value]="transactionService.transactions()" [tableStyle]="{ 'min-width': '50rem' }">
+<p-table [value]="transactions()" [tableStyle]="{ 'min-width': '50rem' }">
   <ng-template pTemplate="header">
     <tr>
+      <th>Id</th>
       <th>Date</th>
-      <th>Merchant</th>
       <th>Category</th>
       <th>Amount</th>
       <th>Status</th>
@@ -16,8 +18,8 @@
 
   <ng-template pTemplate="body" let-item>
     <tr>
+      <td>{{ item.id }}</td>
       <td>{{ item.date }}</td>
-      <td>{{ item.merchant }}</td>
       <td>{{ item.category }}</td>
       <td>{{ item.amount }}</td>
       <td>
