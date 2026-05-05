@@ -6,8 +6,14 @@
   color-scheme: light;
 }
 
+:root.app-dark {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
+  background: var(--p-content-background, var(--p-surface-0));
+  color: var(--p-content-color, var(--p-text-color));
   font-family: Inter, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 

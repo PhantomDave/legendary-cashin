@@ -2,13 +2,27 @@ import { AppNavigationItem } from '../models/app-navigation.model';
 
 export const APP_NAVIGATION_ITEMS: AppNavigationItem[] = [
   {
-    label: 'Dashboard',
+    label: 'Overview',
     icon: 'pi pi-home',
-    route: '/dashboard',
+    expanded: true,
+    items: [
+      {
+        label: 'Dashboard',
+        icon: 'pi pi-chart-line',
+        routerLink: '/dashboard',
+      },
+    ],
   },
   {
-    label: 'Transactions',
+    label: 'Money',
     icon: 'pi pi-wallet',
-    route: '/transactions',
+    expanded: true,
+    items: [
+      {
+        label: 'Transactions',
+        icon: 'pi pi-list',
+        routerLink: '/transactions',
+      },
+    ],
   },
 ];
