@@ -4,11 +4,21 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputGroupModule } from 'primeng/inputgroup';
 import { InputGroupAddon } from 'primeng/inputgroupaddon';
-import { BudgetService } from '../../../services/budget.service';
+import { BudgetService } from '../../services/budget.service';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { InputTextModule } from 'primeng/inputtext';
 
 @Component({
   selector: 'app-create-budget-component',
-  imports: [InputGroupModule, InputGroupAddon, DialogModule, ReactiveFormsModule, ButtonModule],
+  imports: [
+    InputGroupModule,
+    InputGroupAddon,
+    DialogModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    InputTextModule,
+    InputNumberModule,
+  ],
   templateUrl: './create-budget-component.html',
   styleUrl: './create-budget-component.scss',
 })

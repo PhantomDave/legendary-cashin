@@ -14,7 +14,7 @@ import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
 import { Budget } from '../../models/budget/Budget';
 import { BudgetService } from '../../services/budget.service';
-import { CreateBudgetComponent } from './create-budget-component/create-budget-component';
+import { CreateBudgetComponent } from '../create-budget-component/create-budget-component';
 
 @Component({
   selector: 'app-shell',

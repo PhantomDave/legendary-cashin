@@ -3,8 +3,8 @@ import { DashboardPageComponent } from './components/pages/dashboard/dashboard-p
 import { NotFoundPageComponent } from './components/pages/not-found/not-found-page.component';
 import { TransactionsPageComponent } from './components/pages/transactions/transactions-page.component';
 import { ShellComponent } from './components/shell/shell.component';
-import { RegisterPageComponent } from './components/account/register-page-component/register-page-component';
-import { LoginPageComponent } from './components/account/login-page-component/login-page-component';
+import { RegisterPageComponent } from './components/pages/account/register-page-component/register-page-component';
+import { LoginPageComponent } from './components/pages/account/login-page-component/login-page-component';
 import { authGuard, guestOnlyGuard } from './guards/auth.guard';
 
 export const routes: Routes = [

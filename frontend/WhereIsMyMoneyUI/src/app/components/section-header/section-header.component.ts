@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 
 @Component({
@@ -12,5 +12,5 @@ export class SectionHeaderComponent {
   readonly title = input.required<string>();
   readonly subtitle = input<string>('');
   readonly ctaText = input<string>('');
-  readonly ctaClick = input<() => void>(() => {});
+  readonly ctaClicked = output<void>();
 }

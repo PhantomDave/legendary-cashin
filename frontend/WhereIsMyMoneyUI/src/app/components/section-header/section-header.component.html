@@ -5,7 +5,7 @@
       <p class="section-header__subtitle">{{ subtitle() }}</p>
     }
   </div>
-  @if (ctaText() && ctaClick()) {
-    <p-button class="section-header__cta" (click)="ctaClick()">{{ ctaText() }}</p-button>
+  @if (ctaText()) {
+    <p-button class="section-header__cta" (click)="ctaClicked.emit()">{{ ctaText() }}</p-button>
   }
 </header>
