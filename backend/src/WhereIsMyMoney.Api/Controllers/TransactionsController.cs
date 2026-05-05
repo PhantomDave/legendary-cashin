@@ -31,9 +31,18 @@ public sealed class TransactionsController(TransactionStore store) : ApiControll
 
     [HttpPost]
     [ProducesResponseType<TransactionResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<TransactionResponse>> CreateTransaction(CreateTransactionRequest request)
     {
-        request.AccountId = GetAccountId();
+        long accountId = GetAccountId();
+        request.AccountId = accountId;
+
+        bool budgetBelongsToAccount = await store.BudgetBelongsToAccountAsync(request.BudgetId, accountId);
+        if (!budgetBelongsToAccount)
+        {
+            return BadRequest(new { message = $"Budget '{request.BudgetId}' is invalid for this account." });
+        }
+
         var transaction = await store.CreateAsync(request);
         return CreatedAtAction(nameof(GetByBudget), new { id = transaction.BudgetId }, transaction);
     }

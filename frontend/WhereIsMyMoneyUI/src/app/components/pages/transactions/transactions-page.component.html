@@ -11,8 +11,8 @@
       <th>Id</th>
       <th>Date</th>
       <th>Category</th>
+      <th>Description</th>
       <th>Amount</th>
-      <th>Status</th>
     </tr>
   </ng-template>
 
@@ -21,10 +21,8 @@
       <td>{{ item.id }}</td>
       <td>{{ item.date }}</td>
       <td>{{ item.category }}</td>
+      <td>{{ item.description }}</td>
       <td>{{ item.amount }}</td>
-      <td>
-        <p-tag [value]="item.status" [severity]="item.status === 'Cleared' ? 'success' : 'warn'" />
-      </td>
     </tr>
   </ng-template>
 </p-table>

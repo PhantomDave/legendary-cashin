@@ -6,6 +6,11 @@ namespace WhereIsMyMoney.Api.Services;
 
 public sealed class TransactionStore(AppDbContext db) : IStore<TransactionResponse, CreateTransactionRequest, UpdateTransactionRequest>
 {
+    public Task<bool> BudgetBelongsToAccountAsync(long budgetId, long accountId)
+    {
+        return db.Budgets.AnyAsync(b => b.Id == budgetId && b.AccountId == accountId);
+    }
+
     public async Task<TransactionResponse?> GetAsync(long id)
     {
         Transaction? transaction = await db.Transactions.FindAsync(id);
@@ -56,6 +61,7 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
         var transaction = new Transaction
         {
             AccountId = value.AccountId,
+            BudgetId = value.BudgetId,
             Description = value.Description,
             Amount = value.Amount,
             Date = value.Date,
