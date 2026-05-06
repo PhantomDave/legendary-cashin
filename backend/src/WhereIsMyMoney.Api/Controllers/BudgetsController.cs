@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using WhereIsMyMoney.Api.Models;
 using WhereIsMyMoney.Api.Models.BudgetModels;
 using WhereIsMyMoney.Api.Services;
 
@@ -20,11 +21,11 @@ public sealed class BudgetsController(BudgetStore store) : ApiControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType<IReadOnlyList<BudgetResponse>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<BudgetResponse>>> GetMyBudgets()
+    [ProducesResponseType<PaginatedResponse<BudgetResponse>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<PaginatedResponse<BudgetResponse>>> GetMyBudgets([FromQuery] PaginationRequest request)
     {
         long accountId = GetAccountId();
-        return Ok(await store.GetByAccountAsync(accountId));
+        return Ok(await store.GetAllByAccountIdPaginatedAsync(accountId, request));
     }
 
     [HttpPost]

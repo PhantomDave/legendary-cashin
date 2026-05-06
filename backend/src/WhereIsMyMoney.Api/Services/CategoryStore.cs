@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using WhereIsMyMoney.Api.Data;
+using WhereIsMyMoney.Api.Models;
 using WhereIsMyMoney.Api.Models.CategoryModels;
 
 namespace WhereIsMyMoney.Api.Services;
 
-public sealed class CategoryStore(AppDbContext db) : IStore<CategoryResponse, CategoryResponse, CategoryResponse>
+public sealed class CategoryStore(AppDbContext db) : IStore<CategoryResponse, CreateCategoryRequest, CategoryResponse>
 {
     public async Task<CategoryResponse?> GetAsync(long id)
     {
@@ -19,21 +20,33 @@ public sealed class CategoryStore(AppDbContext db) : IStore<CategoryResponse, Ca
             .ToListAsync();
     }
 
-    public async Task<IReadOnlyList<CategoryResponse>> GetByAccountAsync(long accountId)
+    public async Task<IReadOnlyList<CategoryResponse>> GetAllByAccountId(long accountId)
     {
         return await db.Categories
             .Where(c => c.AccountId == accountId)
+            .OrderBy(c => c.Name)
+            .ThenBy(c => c.Id)
             .Select(c => ToResponse(c))
             .ToListAsync();
     }
 
-    public async Task<CategoryResponse> CreateAsync(CategoryResponse value)
+    public async Task<PaginatedResponse<CategoryResponse>> GetAllByAccountIdPaginatedAsync(long accountId, PaginationRequest request)
+    {
+        return await db.Categories
+            .Where(c => c.AccountId == accountId)
+            .OrderBy(c => c.Name)
+            .ThenBy(c => c.Id)
+            .Select(c => ToResponse(c))
+            .ToPaginatedResponseAsync(request);
+    }
+
+    public async Task<CategoryResponse> CreateAsync(CreateCategoryRequest request)
     {
         var category = new Category
         {
-            Name = value.Name,
-            Budget = value.Budget,
-            AccountId = value.AccountId
+            Name = request.Name,
+            Budget = request.Budget,
+            AccountId = request.AccountId
         };
 
         db.Categories.Add(category);
@@ -67,4 +80,5 @@ public sealed class CategoryStore(AppDbContext db) : IStore<CategoryResponse, Ca
 
     internal static CategoryResponse ToResponse(Category category) =>
         new(category.Id, category.AccountId, category.Name, category.Budget);
+
 }

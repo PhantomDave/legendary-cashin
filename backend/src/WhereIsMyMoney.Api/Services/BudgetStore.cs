@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WhereIsMyMoney.Api.Data;
+using WhereIsMyMoney.Api.Models;
 using WhereIsMyMoney.Api.Models.BudgetModels;
 
 namespace WhereIsMyMoney.Api.Services;
@@ -19,12 +20,22 @@ public sealed class BudgetStore(AppDbContext db) : IStore<BudgetResponse, Budget
             .ToListAsync();
     }
 
-    public async Task<IReadOnlyList<BudgetResponse>> GetByAccountAsync(long accountId)
+    public async Task<IReadOnlyList<BudgetResponse>> GetAllByAccountId(long accountId)
     {
         return await db.Budgets
             .Where(b => b.AccountId == accountId)
             .Select(b => ToResponse(b))
             .ToListAsync();
+    }
+
+    public async Task<PaginatedResponse<BudgetResponse>> GetAllByAccountIdPaginatedAsync(long accountId, PaginationRequest request)
+    {
+        return await db.Budgets
+            .Where(b => b.AccountId == accountId)
+            .OrderByDescending(b => b.CreatedAtUtc)
+            .ThenByDescending(b => b.Id)
+            .Select(b => ToResponse(b))
+            .ToPaginatedResponseAsync(request);
     }
 
     public async Task<BudgetResponse> CreateAsync(BudgetResponse value)

@@ -1,0 +1,27 @@
+<p-table
+  [value]="items()"
+  [loading]="loading()"
+  [paginator]="true"
+  [lazy]="true"
+  [rows]="rows()"
+  [first]="first()"
+  [totalRecords]="totalRecords()"
+  [rowsPerPageOptions]="rowsPerPageOptions()"
+  [showCurrentPageReport]="showCurrentPageReport()"
+  [tableStyle]="{ 'min-width': minWidth() }"
+  [size]="size()"
+  [showGridlines]="showGridlines()"
+  [currentPageReportTemplate]="currentPageReportTemplate()"
+  (onPage)="onPageChange($event)"
+>
+  <ng-template pTemplate="header">
+    <ng-container [ngTemplateOutlet]="headerTemplate()" />
+  </ng-template>
+
+  <ng-template pTemplate="body" let-rowItem>
+    <ng-container
+      [ngTemplateOutlet]="bodyTemplate()"
+      [ngTemplateOutletContext]="{ $implicit: rowItem }"
+    />
+  </ng-template>
+</p-table>

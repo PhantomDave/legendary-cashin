@@ -1,11 +1,12 @@
 import { Routes } from '@angular/router';
-import { DashboardPageComponent } from './components/pages/dashboard/dashboard-page.component';
-import { NotFoundPageComponent } from './components/pages/not-found/not-found-page.component';
-import { TransactionsPageComponent } from './components/pages/transactions/transactions-page.component';
 import { ShellComponent } from './components/shell/shell.component';
-import { RegisterPageComponent } from './components/pages/account/register-page-component/register-page-component';
-import { LoginPageComponent } from './components/pages/account/login-page-component/login-page-component';
 import { authGuard, guestOnlyGuard } from './guards/auth.guard';
+import { CategoriesPageComponent } from './pages/categories/categories-page-component';
+import { DashboardPageComponent } from './pages/dashboard/dashboard-page.component';
+import { TransactionsPageComponent } from './pages/transactions/transactions-page.component';
+import { LoginPageComponent } from './pages/account/login-page-component/login-page-component';
+import { RegisterPageComponent } from './pages/account/register-page-component/register-page-component';
+import { NotFoundPageComponent } from './pages/not-found/not-found-page.component';
 
 export const routes: Routes = [
   {
@@ -25,6 +26,10 @@ export const routes: Routes = [
       {
         path: 'transactions',
         component: TransactionsPageComponent,
+      },
+      {
+        path: 'categories',
+        component: CategoriesPageComponent,
       },
     ],
   },

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WhereIsMyMoney.Api.Data;
+using WhereIsMyMoney.Api.Models;
 using WhereIsMyMoney.Api.Models.TransactionModels;
 
 namespace WhereIsMyMoney.Api.Services;
@@ -24,6 +25,24 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
             .ToListAsync();
     }
 
+    public async Task<IReadOnlyList<TransactionResponse>> GetAllByAccountId(long accountId)
+    {
+        return await db.Transactions
+            .Where(t => t.AccountId == accountId)
+            .Select(t => ToResponse(t))
+            .ToListAsync();
+    }
+
+    public async Task<PaginatedResponse<TransactionResponse>> GetAllByAccountIdPaginatedAsync(long accountId, PaginationRequest request)
+    {
+        return await db.Transactions
+            .Where(t => t.AccountId == accountId)
+            .OrderByDescending(t => t.Date)
+            .ThenByDescending(t => t.Id)
+            .Select(t => ToResponse(t))
+            .ToPaginatedResponseAsync(request);
+    }
+
     public async Task<IReadOnlyList<TransactionResponse>> GetByBudgetAsync(int budgetId, long accountId)
     {
         return await db.Transactions
@@ -31,6 +50,16 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
             .OrderByDescending(t => t.Date)
             .Select(t => ToResponse(t))
             .ToListAsync();
+    }
+
+    public async Task<PaginatedResponse<TransactionResponse>> GetByBudgetPaginatedAsync(int budgetId, long accountId, PaginationRequest request)
+    {
+        return await db.Transactions
+            .Where(t => t.BudgetId == budgetId && t.AccountId == accountId)
+            .OrderByDescending(t => t.Date)
+            .ThenByDescending(t => t.Id)
+            .Select(t => ToResponse(t))
+            .ToPaginatedResponseAsync(request);
     }
 
     public async Task<IReadOnlyList<TransactionResponse>> GetByAccountAsync(long accountId)

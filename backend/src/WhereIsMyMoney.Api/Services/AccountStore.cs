@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using WhereIsMyMoney.Api.Data;
+using WhereIsMyMoney.Api.Models;
 using WhereIsMyMoney.Api.Models.AccountModels;
 using WhereIsMyMoney.Api.Services;
 
@@ -101,5 +102,22 @@ public sealed class AccountStore(AppDbContext db) : IStore<AccountResponse, Crea
         var actualHash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, algorithm, expectedHash.Length);
 
         return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
+    }
+
+    public async Task<IReadOnlyList<AccountResponse>> GetAllByAccountId(long accountId)
+    {
+        return await db.Accounts
+            .Where(a => a.Id == accountId)
+            .Select(a => ToResponse(a))
+            .ToListAsync();
+    }
+
+    public async Task<PaginatedResponse<AccountResponse>> GetAllByAccountIdPaginatedAsync(long accountId, PaginationRequest request)
+    {
+        return await db.Accounts
+            .Where(a => a.Id == accountId)
+            .OrderBy(a => a.Id)
+            .Select(a => ToResponse(a))
+            .ToPaginatedResponseAsync(request);
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using WhereIsMyMoney.Api.Models;
 using WhereIsMyMoney.Api.Models.TransactionModels;
 using WhereIsMyMoney.Api.Services;
 
@@ -23,21 +24,21 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
     }
 
     [HttpGet]
-    [ProducesResponseType<IReadOnlyList<TransactionResponse>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<TransactionResponse>>> GetMyTransactions()
+    [ProducesResponseType<PaginatedResponse<TransactionResponse>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<PaginatedResponse<TransactionResponse>>> GetMyTransactions([FromQuery] PaginationRequest request)
     {
         long accountId = GetAccountId();
-        return Ok(await store.GetByAccountAsync(accountId));
+        return Ok(await store.GetAllByAccountIdPaginatedAsync(accountId, request));
     }
 
     [HttpGet("budget/{id:int}")]
-    [ProducesResponseType<TransactionResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<PaginatedResponse<TransactionResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<TransactionResponse>> GetByBudget(int id)
+    public async Task<ActionResult<PaginatedResponse<TransactionResponse>>> GetByBudget(int id, [FromQuery] PaginationRequest request)
     {
         long accountId = GetAccountId();
-        var transactions = await store.GetByBudgetAsync(id, accountId);
-        return transactions is null || !transactions.Any()
+        var transactions = await store.GetByBudgetPaginatedAsync(id, accountId, request);
+        return transactions.TotalCount == 0
             ? NotFound(new { message = $"Transactions for budget '{id}' were not found." })
             : Ok(transactions);
     }

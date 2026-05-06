@@ -2,6 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { Transaction } from '../models/transaction/Transaction';
 import { TransactionMetrics } from '../models/transaction/TransactionMetrics';
 import { ApiService } from './api.service';
+import { PaginatedResponse } from '../models/api/paginated-response.model';
 
 @Injectable({
   providedIn: 'root',
@@ -14,6 +15,7 @@ export class TransactionService {
 
   private readonly api = inject(ApiService);
   private readonly baseApiUrl = '/transactions/';
+  private readonly defaultPageSize = 15;
 
   async getMetrics(budgetId: number): Promise<TransactionMetrics | null> {
     this.isLoading.set(true);
@@ -32,14 +34,23 @@ export class TransactionService {
     }
   }
 
-  async getTransactions(): Promise<Transaction[] | null> {
+  async getTransactions(
+    pageNumber: number = 1,
+    pageSize: number = this.defaultPageSize,
+  ): Promise<PaginatedResponse<Transaction> | null> {
     this.isLoading.set(true);
     this.error.set(null);
 
     try {
-      const transactions = await this.api.get<Transaction[]>(this.baseApiUrl);
-      this.transactions.set(transactions);
-      return transactions;
+      const response = await this.api.get<PaginatedResponse<Transaction>>(this.baseApiUrl, {
+        params: {
+          pageNumber,
+          pageSize,
+        },
+      });
+
+      this.transactions.set(response.items);
+      return response;
     } catch (error) {
       this.error.set('Failed to load transactions.');
       return null;
@@ -48,16 +59,27 @@ export class TransactionService {
     }
   }
 
-  async getByBudgetId(budgetId: number): Promise<Transaction[] | null> {
+  async getByBudgetId(
+    budgetId: number,
+    pageNumber: number = 1,
+    pageSize: number = this.defaultPageSize,
+  ): Promise<PaginatedResponse<Transaction> | null> {
     this.isLoading.set(true);
     this.error.set(null);
 
     try {
-      const transactions = await this.api.get<Transaction[]>(
+      const response = await this.api.get<PaginatedResponse<Transaction>>(
         `${this.baseApiUrl}budget/${budgetId}`,
+        {
+          params: {
+            pageNumber,
+            pageSize,
+          },
+        },
       );
-      this.transactions.set(transactions);
-      return transactions;
+
+      this.transactions.set(response.items);
+      return response;
     } catch (error) {
       this.error.set('Failed to load transactions for the selected budget.');
       return null;

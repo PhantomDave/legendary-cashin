@@ -6,8 +6,8 @@ import { InputGroupAddon } from 'primeng/inputgroupaddon';
 import { Dialog } from 'primeng/dialog';
 import { Password } from 'primeng/password';
 import { ButtonDirective } from 'primeng/button';
-import { AccountService } from '../../../../services/account.service';
 import { RouterModule } from '@angular/router';
+import { AccountService } from '../../../services/account.service';
 
 @Component({
   selector: 'app-login-page-component',

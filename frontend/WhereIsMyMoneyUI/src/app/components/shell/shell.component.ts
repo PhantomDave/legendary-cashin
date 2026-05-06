@@ -52,11 +52,16 @@ export class ShellComponent implements OnInit {
     this.syncThemeState();
     await this.resolveDisplayName();
 
-    const budgets = await this.budgetService.getBudgets();
-    if (!this.selectedBudget() && budgets && budgets.length > 0) {
+    localStorage.getItem('theme') === 'dark' && this.toggleTheme();
+
+    const budgetResponse = await this.budgetService.getBudgets();
+    const budgets = budgetResponse?.items ?? [];
+
+    if (!this.selectedBudget() && budgets.length > 0) {
       this.budgetService.selectedBudget.set(budgets[0]);
     }
-    if (budgets && budgets.length == 0) {
+
+    if (budgets.length === 0) {
       this.isCreateModalVisible = true;
     }
   }
@@ -65,6 +70,8 @@ export class ShellComponent implements OnInit {
     const nextValue = !this.isDarkMode();
     this.isDarkMode.set(nextValue);
     this.document.documentElement.classList.toggle('app-dark', nextValue);
+
+    localStorage.setItem('theme', nextValue ? 'dark' : 'light');
   }
 
   onChange(selectedBudget: Budget): void {

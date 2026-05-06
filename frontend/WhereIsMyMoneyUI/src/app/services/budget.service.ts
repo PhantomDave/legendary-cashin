@@ -1,6 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { ApiService } from './api.service';
 import { Budget } from '../models/budget/Budget';
+import { PaginatedResponse } from '../models/api/paginated-response.model';
 
 @Injectable({
   providedIn: 'root',
@@ -13,6 +14,7 @@ export class BudgetService {
 
   private readonly api = inject(ApiService);
   private readonly baseApiUrl = '/budgets/';
+  private readonly defaultPageSize = 15;
 
   private syncSelectedBudget(budgets: Budget[]): void {
     const current = this.selectedBudget();
@@ -21,13 +23,22 @@ export class BudgetService {
     }
   }
 
-  async getBudgets(): Promise<Budget[] | null> {
+  async getBudgets(
+    pageNumber: number = 1,
+    pageSize: number = this.defaultPageSize,
+  ): Promise<PaginatedResponse<Budget> | null> {
     this.isLoading.set(true);
     this.error.set(null);
     try {
-      const result = await this.api.get<Budget[]>(this.baseApiUrl, undefined, true);
-      this.budgets.set(result);
-      this.syncSelectedBudget(result);
+      const result = await this.api.get<PaginatedResponse<Budget>>(this.baseApiUrl, {
+        params: {
+          pageNumber,
+          pageSize,
+        },
+      });
+
+      this.budgets.set(result.items);
+      this.syncSelectedBudget(result.items);
       return result;
     } catch (e) {
       this.error.set((e as Error).message);

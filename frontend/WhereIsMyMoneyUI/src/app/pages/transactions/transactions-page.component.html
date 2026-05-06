@@ -5,10 +5,17 @@
   (ctaClicked)="addTransaction()"
 />
 
-<p-table [value]="transactions()" [tableStyle]="{ 'min-width': '50rem' }">
-  <ng-template pTemplate="header">
+<app-paginated-table
+  [items]="transactions()?.items ?? []"
+  [totalRecords]="transactions()?.totalCount ?? 0"
+  [loading]="isLoading()"
+  [rows]="rows"
+  [first]="first"
+  [rowsPerPageOptions]="rowsPerPageOptions"
+  (pageChange)="onPageChange($event)"
+>
+  <ng-template #headerTemplate>
     <tr>
-      <th>Id</th>
       <th>Date</th>
       <th>Category</th>
       <th>Description</th>
@@ -16,16 +23,15 @@
     </tr>
   </ng-template>
 
-  <ng-template pTemplate="body" let-item>
+  <ng-template #bodyTemplate let-item>
     <tr>
-      <td>{{ item.id }}</td>
       <td>{{ item.date | date: 'short' }}</td>
       <td>{{ item.category }}</td>
       <td>{{ item.description }}</td>
       <td>{{ item.amount | currency: selectedBudget()?.defaultCurrency }}</td>
     </tr>
   </ng-template>
-</p-table>
+</app-paginated-table>
 
 <app-create-transaction-component
   [(visible)]="isCreateTransactionDialogVisible"

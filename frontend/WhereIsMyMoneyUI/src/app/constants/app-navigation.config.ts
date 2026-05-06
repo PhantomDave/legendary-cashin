@@ -25,4 +25,16 @@ export const APP_NAVIGATION_ITEMS: AppNavigationItem[] = [
       },
     ],
   },
+  {
+    label: 'Configuration',
+    icon: 'pi pi-cog',
+    expanded: true,
+    items: [
+      {
+        label: 'Categories',
+        icon: 'pi pi-sliders-h',
+        routerLink: '/categories',
+      },
+    ],
+  },
 ];

@@ -1,0 +1,32 @@
+<app-section-header
+  title="Categories"
+  subtitle="A feature page owns its table, filters, and orchestration."
+  ctaText="Add Category"
+  (ctaClicked)="addCategory()"
+/>
+
+<app-paginated-table
+  [items]="categories()?.items ?? []"
+  [totalRecords]="categories()?.totalCount ?? 0"
+  [loading]="isLoading()"
+  [rows]="rows"
+  [first]="first"
+  [rowsPerPageOptions]="rowsPerPageOptions"
+  (pageChange)="onPageChange($event)"
+>
+  <ng-template #headerTemplate>
+    <tr>
+      <th>Id</th>
+      <th>Name</th>
+      <th>Budget</th>
+    </tr>
+  </ng-template>
+
+  <ng-template #bodyTemplate let-item>
+    <tr>
+      <td>{{ item.id }}</td>
+      <td>{{ item.name }}</td>
+      <td>{{ item.budget }}</td>
+    </tr>
+  </ng-template>
+</app-paginated-table>

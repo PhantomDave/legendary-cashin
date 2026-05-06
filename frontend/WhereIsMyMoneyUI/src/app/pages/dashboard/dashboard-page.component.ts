@@ -2,11 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@a
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
-import { DashboardMetric } from '../../../models/dashboard-metric.model';
-import { SectionHeaderComponent } from '../../section-header/section-header.component';
-import { BudgetService } from '../../../services/budget.service';
-import { TransactionService } from '../../../services/transaction.service';
 import { CurrencyPipe } from '@angular/common';
+import { SectionHeaderComponent } from '../../components/section-header/section-header.component';
+import { DashboardMetric } from '../../models/dashboard-metric.model';
+import { BudgetService } from '../../services/budget.service';
+import { TransactionService } from '../../services/transaction.service';
 
 @Component({
   selector: 'app-dashboard-page',
