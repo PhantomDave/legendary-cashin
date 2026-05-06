@@ -1,32 +1,116 @@
+<!--suppress AngularUnusedSymbol -->
 <app-section-header
-  title="Categories"
-  subtitle="A feature page owns its table, filters, and orchestration."
-  ctaText="Add Category"
   (ctaClicked)="addCategory()"
+  ctaText="Add Category"
+  subtitle="A feature page owns its table, filters, and orchestration."
+  title="Categories"
 />
 
 <app-paginated-table
-  [items]="categories()?.items ?? []"
-  [totalRecords]="categories()?.totalCount ?? 0"
-  [loading]="isLoading()"
-  [rows]="rows"
-  [first]="first"
-  [rowsPerPageOptions]="rowsPerPageOptions"
   (pageChange)="onPageChange($event)"
+  [first]="first"
+  [items]="categories()?.items ?? []"
+  [loading]="isLoading()"
+  [rowsPerPageOptions]="rowsPerPageOptions"
+  [rows]="rows"
+  [totalRecords]="categories()?.totalCount ?? 0"
 >
+  <!--suppress AngularUnusedSymbol -->
   <ng-template #headerTemplate>
     <tr>
-      <th>Id</th>
       <th>Name</th>
       <th>Budget</th>
+      <th>Actions</th>
     </tr>
   </ng-template>
 
+  <!--suppress AngularUnusedSymbol -->
   <ng-template #bodyTemplate let-item>
     <tr>
-      <td>{{ item.id }}</td>
-      <td>{{ item.name }}</td>
-      <td>{{ item.budget }}</td>
+      <td>
+        <p-inplace
+          #nameInplace
+          (onActivate)="startEdit(item)"
+          (onDeactivate)="cancelEdit(item.id)"
+          [closable]="false"
+        >
+          <!--suppress AngularUnusedSymbol -->
+          <ng-template #display>{{ item.name }}</ng-template>
+          <!--suppress AngularUnusedSymbol -->
+          <ng-template #content>
+            <div class="inline-edit-cell">
+              <input
+                [(ngModel)]="editingValues()[item.id].name"
+                aria-label="Category name"
+                pInputText
+                size="small"
+              />
+              <p-button
+                (onClick)="saveEdit(item, nameInplace)"
+                [loading]="isLoading()"
+                aria-label="Save name"
+                icon="pi pi-check"
+                severity="success"
+                size="small"
+              />
+              <p-button
+                (onClick)="nameInplace.deactivate()"
+                aria-label="Cancel editing name"
+                icon="pi pi-times"
+                severity="secondary"
+                size="small"
+              />
+            </div>
+          </ng-template>
+        </p-inplace>
+      </td>
+
+      <td>
+        <p-inplace
+          #budgetInplace
+          (onActivate)="startEdit(item)"
+          (onDeactivate)="cancelEdit(item.id)"
+        >
+          <!--suppress AngularUnusedSymbol -->
+          <ng-template #display>{{ item.budget }}</ng-template>
+          <!--suppress AngularUnusedSymbol -->
+          <ng-template #content>
+            <div class="inline-edit-cell">
+              <p-inputnumber
+                [(ngModel)]="editingValues()[item.id].budget"
+                [maxFractionDigits]="2"
+                [minFractionDigits]="2"
+                aria-label="Category budget"
+                inputId="budget-{{ item.id }}"
+                mode="decimal"
+              ></p-inputnumber>
+              <p-button
+                (onClick)="saveEdit(item, budgetInplace)"
+                [loading]="isLoading()"
+                aria-label="Save budget"
+                icon="pi pi-check"
+                severity="success"
+                size="small"
+              />
+              <p-button
+                (onClick)="budgetInplace.deactivate()"
+                aria-label="Cancel editing budget"
+                icon="pi pi-times"
+                severity="secondary"
+                size="small"
+              />
+            </div>
+          </ng-template>
+        </p-inplace>
+      </td>
+      <td>
+        <p-button (onClick)="deleteCategory($event, item.id)" icon="pi pi-trash" severity="danger" size="small"/>
+      </td>
     </tr>
   </ng-template>
 </app-paginated-table>
+
+<p-toast/>
+<p-confirmdialog></p-confirmdialog>
+
+<app-create-category-component [visible]="isCreateCategoryModalVisible"/>

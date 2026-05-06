@@ -5,25 +5,53 @@ import { SectionHeaderComponent } from '../../components/section-header/section-
 import { PaginatedResponse } from '../../models/api/paginated-response.model';
 import { Category } from '../../models/category/Category';
 import { CategoryService } from '../../services/category.service';
+import { CreateCategoryComponent } from '../../components/create-category-component/create-category-component';
+import { Inplace } from 'primeng/inplace';
+import { InputText } from 'primeng/inputtext';
+import { Button } from 'primeng/button';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { FormsModule } from '@angular/forms';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+
+interface EditValues {
+  name: string;
+  budget: number;
+}
 
 @Component({
   selector: 'app-categories-page-component',
-  imports: [SectionHeaderComponent, PaginatedTableComponent],
+  imports: [
+    SectionHeaderComponent,
+    PaginatedTableComponent,
+    CreateCategoryComponent,
+    InputNumberModule,
+    Inplace,
+    InputText,
+    Button,
+    FormsModule,
+    ConfirmDialogModule,
+    ToastModule,
+  ],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './categories-page-component.html',
   styleUrl: './categories-page-component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CategoriesPageComponent {
-  private readonly categoryService = inject(CategoryService);
-  private latestLoadRequestId = 0;
-
-  readonly isLoading = this.categoryService.isLoading;
   readonly rowsPerPageOptions = [10, 25, 50];
   readonly categories = signal<PaginatedResponse<Category> | null>(null);
-
+  readonly editingValues = signal<Record<number, EditValues>>({});
   first = 0;
   rows = 10;
   currentPage = 1;
+  isCreateCategoryModalVisible = false;
+  private confirmationService = inject(ConfirmationService);
+  private messageService = inject(MessageService);
+  private readonly categoryService = inject(CategoryService);
+  readonly isLoading = this.categoryService.isLoading;
+  private latestLoadRequestId = 0;
 
   constructor() {
     effect(() => {
@@ -32,25 +60,84 @@ export class CategoriesPageComponent {
   }
 
   addCategory(): void {
-    // Placeholder for upcoming create-category flow.
+    this.isCreateCategoryModalVisible = true;
   }
 
   onPageChange(event: PaginatorState): void {
     this.first = event.first ?? 0;
     this.rows = event.rows ?? this.rows;
     this.currentPage = Math.floor(this.first / this.rows) + 1;
-
     void this.loadCategories();
+  }
+
+  startEdit(item: Category): void {
+    this.editingValues.update((current) => ({
+      ...current,
+      [item.id]: { name: item.name, budget: item.budget },
+    }));
+  }
+
+  cancelEdit(id: number): void {
+    this.editingValues.update((current) => {
+      const { [id]: _, ...rest } = current;
+      return rest;
+    });
+  }
+
+  async saveEdit(item: Category, inplaceRef: Inplace): Promise<void> {
+    const values = this.editingValues()[item.id];
+    if (!values) return;
+
+    const updated = await this.categoryService.updateCategory(item.id, {
+      name: values.name,
+      budget: values.budget,
+    });
+
+    if (updated) {
+      this.categories.update((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          items: current.items.map((c) => (c.id === item.id ? updated : c)),
+        };
+      });
+      this.cancelEdit(item.id);
+      inplaceRef.deactivate();
+    }
+  }
+
+  protected deleteCategory(event: Event, id: number) {
+    this.confirmationService.confirm({
+      target: event.target as EventTarget,
+      message: 'Do you want to delete this category?',
+      header: 'Delete Category',
+      icon: 'pi pi-info-circle',
+      rejectLabel: 'Cancel',
+      rejectButtonProps: {
+        label: 'Cancel',
+        severity: 'secondary',
+        outlined: true,
+      },
+      acceptButtonProps: {
+        label: 'Delete',
+        severity: 'danger',
+      },
+
+      accept: () => {
+        this.categoryService.deleteCategory(id).then();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Confirmed',
+          detail: 'Record deleted',
+        });
+      },
+    });
   }
 
   private async loadCategories(): Promise<void> {
     const requestId = ++this.latestLoadRequestId;
     const response = await this.categoryService.getCategories(this.currentPage, this.rows);
-
-    if (requestId !== this.latestLoadRequestId) {
-      return;
-    }
-
+    if (requestId !== this.latestLoadRequestId) return;
     this.categories.set(response);
   }
 }

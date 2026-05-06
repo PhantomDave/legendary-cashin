@@ -7,10 +7,10 @@ namespace WhereIsMyMoney.Api.Controllers;
 
 [ApiController]
 [Route("categories")]
-public class CategoriesController(IStore<CategoryResponse, CreateCategoryRequest, CategoryResponse> store) : ApiControllerBase
+public class CategoriesController(CategoryStore store) : ApiControllerBase
 {
-    [HttpGet("{id:long}")]
-    public async Task<ActionResult<CategoryResponse>> GetAsync(long id)
+    [HttpGet("{id:int}", Name = "GetCategoryById")]
+    public async Task<ActionResult<CategoryResponse>> GetAsync(int id)
     {
         CategoryResponse? category = await store.GetAsync(id);
         return category is null ? NotFound() : Ok(category);
@@ -30,8 +30,32 @@ public class CategoriesController(IStore<CategoryResponse, CreateCategoryRequest
         long accountId = GetAccountId();
         request.AccountId = accountId;
         CategoryResponse created = await store.CreateAsync(request);
-        return CreatedAtAction(nameof(GetAsync), new { id = created.Id }, created);
+        return CreatedAtRoute("GetCategoryById", new { id = created.Id }, created);
     }
 
+    [HttpPut("{id:int}")]
+    public async Task<ActionResult<CategoryResponse>> UpdateAsync(int id, [FromBody] UpdateCategoryRequest request)
+    {
+        long accountId = GetAccountId();
+        CategoryResponse? existing = await store.GetAsync(id);
+        if (existing is null || existing.AccountId != accountId)
+            return NotFound();
+
+        var updated = existing with { Name = request.Name, Budget = request.Budget };
+        bool success = await store.UpdateAsync(id, updated);
+        return success ? Ok(updated) : NotFound();
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<ActionResult<CategoryResponse>> DeleteAsync(int id)
+    {
+        long accountId = GetAccountId();
+        CategoryResponse? existing = await store.GetAsync(id);
+        if (existing is null || existing.AccountId != accountId)
+            return NotFound();
+
+        bool success = await store.DeleteAsync(id);
+        return success ? NoContent() : NotFound();
+    }
 
 }

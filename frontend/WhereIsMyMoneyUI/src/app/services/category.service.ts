@@ -40,6 +40,34 @@ export class CategoryService {
     }
   }
 
+  async updateCategory(id: number, category: Omit<Category, 'id'>): Promise<Category | null> {
+    this.isLoading.set(true);
+    this.error.set(null);
+    try {
+      const updated = await this.api.put<Category>(`${this.baseApiUrl}${id}`, category);
+      this.categories.update((current) => current.map((c) => (c.id === id ? updated : c)));
+      return updated;
+    } catch {
+      this.error.set('Failed to update category.');
+      return null;
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  async deleteCategory(id: number): Promise<void> {
+    this.isLoading.set(true);
+    this.error.set(null);
+    try {
+      await this.api.delete<Category>(`${this.baseApiUrl}${id}`);
+      this.categories.update((current) => current.filter((c) => c.id !== id));
+    } catch {
+      this.error.set('Failed to delete category.');
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
   async createCategory(category: Omit<Category, 'id'>): Promise<Category | null> {
     this.isLoading.set(true);
     this.error.set(null);
