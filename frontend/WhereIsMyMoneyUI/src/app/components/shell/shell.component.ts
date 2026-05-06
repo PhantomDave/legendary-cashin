@@ -44,21 +44,29 @@ export class ShellComponent implements OnInit {
   private readonly document = inject(DOCUMENT);
   private readonly router = inject(Router);
   private readonly budgetService = inject(BudgetService);
-  private readonly accountService = inject(AccountService);
   readonly selectedBudget = this.budgetService.selectedBudget;
   readonly budgets = this.budgetService.budgets;
+  private readonly accountService = inject(AccountService);
 
   async ngOnInit(): Promise<void> {
     this.syncThemeState();
     await this.resolveDisplayName();
 
     localStorage.getItem('theme') === 'dark' && this.toggleTheme();
-
+    const selectedBudget = localStorage.getItem('selectedBudgetId');
+    let selectedBudgetId = -1;
+    if (selectedBudget) {
+      selectedBudgetId = parseInt(selectedBudget);
+    }
     const budgetResponse = await this.budgetService.getBudgets();
     const budgets = budgetResponse?.items ?? [];
 
-    if (!this.selectedBudget() && budgets.length > 0) {
-      this.budgetService.selectedBudget.set(budgets[0]);
+    if (
+      selectedBudgetId != null &&
+      budgets.length > 0 &&
+      budgets.find((b) => b.id == selectedBudgetId)
+    ) {
+      this.budgetService.selectedBudget.set(budgets.find((b) => b.id == selectedBudgetId) ?? null);
     }
 
     if (budgets.length === 0) {
@@ -76,6 +84,7 @@ export class ShellComponent implements OnInit {
 
   onChange(selectedBudget: Budget): void {
     this.budgetService.selectedBudget.set(selectedBudget);
+    localStorage.setItem('selectedBudgetId', selectedBudget.id.toString());
   }
 
   async logout(): Promise<void> {
