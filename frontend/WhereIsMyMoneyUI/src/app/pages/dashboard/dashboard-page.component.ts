@@ -17,20 +17,9 @@ import { TransactionService } from '../../services/transaction.service';
 })
 export class DashboardPageComponent {
   private readonly budgetService = inject(BudgetService);
-  private readonly transactionService = inject(TransactionService);
-
   readonly selectedBudget = computed(() => this.budgetService.selectedBudget());
+  private readonly transactionService = inject(TransactionService);
   private readonly transactionMetrics = computed(() => this.transactionService.metrics());
-
-  constructor() {
-    effect(() => {
-      const budget = this.selectedBudget();
-      if (budget) {
-        this.transactionService.getMetrics(budget.id);
-      }
-    });
-  }
-
   readonly metrics = computed<DashboardMetric[]>(() => {
     const budget = this.selectedBudget();
     const tm = this.transactionMetrics();
@@ -78,6 +67,15 @@ export class DashboardPageComponent {
       },
     ];
   });
+
+  constructor() {
+    effect(() => {
+      const budget = this.selectedBudget();
+      if (budget) {
+        void this.transactionService.getMetrics(budget.id);
+      }
+    });
+  }
 }
 
 function formatTrend(value: number | null): string {

@@ -11,9 +11,9 @@ import { InputText } from 'primeng/inputtext';
 import { Button } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { FormsModule } from '@angular/forms';
-import { ToastModule } from 'primeng/toast';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ToastService } from '../../services/toast.service';
 
 interface EditValues {
   name: string;
@@ -32,9 +32,8 @@ interface EditValues {
     Button,
     FormsModule,
     ConfirmDialogModule,
-    ToastModule,
   ],
-  providers: [MessageService, ConfirmationService],
+  providers: [ConfirmationService],
   templateUrl: './categories-page-component.html',
   styleUrl: './categories-page-component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,7 +47,7 @@ export class CategoriesPageComponent {
   currentPage = 1;
   isCreateCategoryModalVisible = false;
   private confirmationService = inject(ConfirmationService);
-  private messageService = inject(MessageService);
+  private readonly toast = inject(ToastService);
   private readonly categoryService = inject(CategoryService);
   readonly isLoading = this.categoryService.isLoading;
   private latestLoadRequestId = 0;
@@ -124,11 +123,9 @@ export class CategoriesPageComponent {
       },
 
       accept: () => {
-        this.categoryService.deleteCategory(id).then();
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Confirmed',
-          detail: 'Record deleted',
+        void this.categoryService.deleteCategory(id).then(() => {
+          this.toast.success('Category deleted');
+          void this.loadCategories();
         });
       },
     });

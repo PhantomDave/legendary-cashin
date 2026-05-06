@@ -1,4 +1,3 @@
-<!--suppress AngularUnusedSymbol -->
 <app-section-header
   (ctaClicked)="addCategory()"
   ctaText="Add Category"
@@ -15,7 +14,6 @@
   [rows]="rows"
   [totalRecords]="categories()?.totalCount ?? 0"
 >
-  <!--suppress AngularUnusedSymbol -->
   <ng-template #headerTemplate>
     <tr>
       <th>Name</th>
@@ -24,7 +22,6 @@
     </tr>
   </ng-template>
 
-  <!--suppress AngularUnusedSymbol -->
   <ng-template #bodyTemplate let-item>
     <tr>
       <td>
@@ -34,9 +31,7 @@
           (onDeactivate)="cancelEdit(item.id)"
           [closable]="false"
         >
-          <!--suppress AngularUnusedSymbol -->
           <ng-template #display>{{ item.name }}</ng-template>
-          <!--suppress AngularUnusedSymbol -->
           <ng-template #content>
             <div class="inline-edit-cell">
               <input
@@ -71,9 +66,7 @@
           (onActivate)="startEdit(item)"
           (onDeactivate)="cancelEdit(item.id)"
         >
-          <!--suppress AngularUnusedSymbol -->
           <ng-template #display>{{ item.budget }}</ng-template>
-          <!--suppress AngularUnusedSymbol -->
           <ng-template #content>
             <div class="inline-edit-cell">
               <p-inputnumber
@@ -110,7 +103,6 @@
   </ng-template>
 </app-paginated-table>
 
-<p-toast/>
 <p-confirmdialog></p-confirmdialog>
 
 <app-create-category-component [visible]="isCreateCategoryModalVisible"/>

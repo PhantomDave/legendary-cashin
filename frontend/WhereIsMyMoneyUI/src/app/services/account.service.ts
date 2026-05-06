@@ -40,8 +40,8 @@ export class AccountService {
         password,
       });
       this.user.set(user!);
-      cookieStore.set('authToken', user!.token);
-      this.router.navigate(['/dashboard']);
+      await cookieStore.set('authToken', user!.token);
+      await this.router.navigate(['/dashboard']);
     } catch (e) {
       this.error.set((e as Error).message);
     } finally {
