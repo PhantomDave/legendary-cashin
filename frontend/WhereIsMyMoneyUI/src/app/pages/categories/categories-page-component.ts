@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, output, signal } from '@angular/core';
 import { PaginatorState } from 'primeng/paginator';
 import { PaginatedTableComponent } from '../../components/paginated-table/paginated-table.component';
 import { SectionHeaderComponent } from '../../components/section-header/section-header.component';
@@ -54,7 +54,7 @@ export class CategoriesPageComponent {
 
   constructor() {
     effect(() => {
-      void this.loadCategories();
+      this.loadCategories();
     });
   }
 
@@ -136,5 +136,9 @@ export class CategoriesPageComponent {
     const response = await this.categoryService.getCategories(this.currentPage, this.rows);
     if (requestId !== this.latestLoadRequestId) return;
     this.categories.set(response);
+  }
+
+  onCategoryCreated() {
+    void this.loadCategories();
   }
 }

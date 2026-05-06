@@ -7,25 +7,49 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { TagModule } from 'primeng/tag';
 import { CreateTransactionComponent } from '../../components/create-transaction-component/create-transaction-component';
 import { PaginatedTableComponent } from '../../components/paginated-table/paginated-table.component';
 import { SectionHeaderComponent } from '../../components/section-header/section-header.component';
 import { BudgetService } from '../../services/budget.service';
-import { TransactionService } from '../../services/transaction.service';
+import { PatchTransactionRequest, TransactionService } from '../../services/transaction.service';
 import { PaginatorState } from 'primeng/paginator';
 import { Transaction } from '../../models/transaction/Transaction';
 import { PaginatedResponse } from '../../models/api/paginated-response.model';
+import { Inplace } from 'primeng/inplace';
+import { InputText } from 'primeng/inputtext';
+import { Button } from 'primeng/button';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { FormsModule } from '@angular/forms';
+import { DatePickerModule } from 'primeng/datepicker';
+import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { CategoryService } from '../../services/category.service';
+import { Category } from '../../models/category/Category';
+
+interface EditValues {
+  date: Date;
+  budgetId: number;
+  description: string;
+  amount: number;
+  categoryIds: number[];
+}
 
 @Component({
   selector: 'app-transactions-page',
   imports: [
-    TagModule,
     PaginatedTableComponent,
     SectionHeaderComponent,
     CreateTransactionComponent,
     CurrencyPipe,
     DatePipe,
+    Inplace,
+    InputText,
+    Button,
+    InputNumberModule,
+    FormsModule,
+    DatePickerModule,
+    SelectModule,
+    MultiSelectModule,
   ],
   templateUrl: './transactions-page.component.html',
   styleUrl: './transactions-page.component.scss',
@@ -34,12 +58,19 @@ import { PaginatedResponse } from '../../models/api/paginated-response.model';
 export class TransactionsPageComponent {
   private readonly transactionService = inject(TransactionService);
   private readonly budgetService = inject(BudgetService);
+  private readonly categoryService = inject(CategoryService);
   private lastBudgetId: number | null = null;
   private latestLoadRequestId = 0;
 
   readonly selectedBudget = computed(() => this.budgetService.selectedBudget());
+  readonly budgets = this.budgetService.budgets;
   readonly isLoading = this.transactionService.isLoading;
   readonly rowsPerPageOptions = [10, 25, 50];
+  readonly categories = signal<Category[]>([]);
+  readonly editingValues = signal<Record<number, EditValues>>({});
+  readonly categoryOptions = computed(() =>
+    this.categories().map((category) => ({ label: category.name, value: category.id })),
+  );
 
   readonly transactions = signal<PaginatedResponse<Transaction> | null>(null);
   first = 0;
@@ -49,6 +80,8 @@ export class TransactionsPageComponent {
   isCreateTransactionDialogVisible = false;
 
   constructor() {
+    void this.loadCategories();
+
     effect(() => {
       const budgetId = this.selectedBudget()?.id;
 
@@ -68,6 +101,8 @@ export class TransactionsPageComponent {
       }
 
       void this.loadTransactions(budgetId);
+
+      console.log('Categories changed', this.categories(), this.categoryOptions());
     });
   }
 
@@ -88,6 +123,76 @@ export class TransactionsPageComponent {
 
   addTransaction(): void {
     this.isCreateTransactionDialogVisible = true;
+  }
+
+  startEdit(item: Transaction): void {
+    const parsedDate = new Date(item.date);
+    this.editingValues.update((current) => ({
+      ...current,
+      [item.id]: {
+        date: Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate,
+        budgetId: item.budgetId,
+        description: item.description,
+        amount: item.amount,
+        categoryIds: [...item.categoryIds],
+      },
+    }));
+  }
+
+  cancelEdit(id: number): void {
+    this.editingValues.update((current) => {
+      const { [id]: _, ...rest } = current;
+      return rest;
+    });
+  }
+
+  async saveEdit(item: Transaction, inplaceRef: Inplace): Promise<void> {
+    const values = this.editingValues()[item.id];
+    if (!values) {
+      return;
+    }
+
+    const patch = this.buildPatch(item, values);
+    if (Object.keys(patch).length === 0) {
+      this.cancelEdit(item.id);
+      inplaceRef.deactivate();
+      return;
+    }
+
+    const updated = await this.transactionService.patchTransaction(item.id, patch);
+    if (!updated) {
+      return;
+    }
+
+    const selectedBudgetId = this.selectedBudget()?.id;
+    if (selectedBudgetId != null && updated.budgetId !== selectedBudgetId) {
+      await this.loadTransactions(selectedBudgetId);
+    } else {
+      this.transactions.update((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          items: current.items.map((transaction) =>
+            transaction.id === item.id ? updated : transaction,
+          ),
+        };
+      });
+    }
+
+    this.cancelEdit(item.id);
+    inplaceRef.deactivate();
+  }
+
+  resolveBudgetName(budgetId: number): string {
+    return this.budgets().find((budget) => budget.id === budgetId)?.name ?? `${budgetId}`;
+  }
+
+  resolveCategoryNames(categoryIds: number[]): string {
+    if (categoryIds.length === 0) {
+      return '-';
+    }
+
+    return categoryIds.map((id) => this.resolveCategoryName(id)).join(', ');
   }
 
   onTransactionCreated(): void {
@@ -118,5 +223,57 @@ export class TransactionsPageComponent {
     }
 
     void this.loadTransactions(budgetId);
+  }
+
+  private resolveCategoryName(id: number): string {
+    return this.categories().find((category) => category.id === id)?.name ?? `${id}`;
+  }
+
+  private async loadCategories(): Promise<void> {
+    const response = await this.categoryService.getCategories(1, 100);
+    console.log('Loaded categories', response?.items);
+    this.categories.set(response?.items ?? []);
+  }
+
+  private buildPatch(item: Transaction, values: EditValues): PatchTransactionRequest {
+    const patch: PatchTransactionRequest = {};
+
+    const description = values.description.trim();
+    if (description !== item.description) {
+      patch.description = description;
+    }
+
+    if (values.amount !== item.amount) {
+      patch.amount = values.amount;
+    }
+
+    const initialDate = new Date(item.date);
+    if (
+      !Number.isNaN(initialDate.getTime()) &&
+      initialDate.toISOString() !== values.date.toISOString()
+    ) {
+      patch.date = values.date.toISOString();
+    }
+
+    if (values.budgetId !== item.budgetId) {
+      patch.budgetId = values.budgetId;
+    }
+
+    if (!this.haveSameIds(values.categoryIds, item.categoryIds)) {
+      patch.categoryIds = values.categoryIds;
+    }
+
+    return patch;
+  }
+
+  private haveSameIds(source: number[], target: number[]): boolean {
+    if (source.length !== target.length) {
+      return false;
+    }
+
+    const left = [...source].sort((a, b) => a - b);
+    const right = [...target].sort((a, b) => a - b);
+
+    return left.every((id, index) => id === right[index]);
   }
 }

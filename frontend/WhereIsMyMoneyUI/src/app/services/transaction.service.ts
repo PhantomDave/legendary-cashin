@@ -4,6 +4,22 @@ import { TransactionMetrics } from '../models/transaction/TransactionMetrics';
 import { ApiService } from './api.service';
 import { PaginatedResponse } from '../models/api/paginated-response.model';
 
+export interface CreateTransactionRequest {
+  description: string;
+  amount: number;
+  date: string;
+  budgetId: number;
+  categoryIds: number[];
+}
+
+export interface PatchTransactionRequest {
+  description?: string;
+  amount?: number;
+  date?: string;
+  budgetId?: number;
+  categoryIds?: number[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -88,7 +104,23 @@ export class TransactionService {
     }
   }
 
-  async createTransaction(transaction: Omit<Transaction, 'id'>): Promise<Transaction | null> {
+  async patchTransaction(id: number, patch: PatchTransactionRequest): Promise<Transaction | null> {
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    try {
+      const updated = await this.api.patch<Transaction>(`${this.baseApiUrl}${id}`, patch);
+      this.transactions.update((current) => current.map((t) => (t.id === id ? updated : t)));
+      return updated;
+    } catch {
+      this.error.set('Failed to update transaction.');
+      return null;
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  async createTransaction(transaction: CreateTransactionRequest): Promise<Transaction | null> {
     this.isLoading.set(true);
     this.error.set(null);
     try {

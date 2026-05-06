@@ -17,7 +17,8 @@
   <ng-template #headerTemplate>
     <tr>
       <th>Date</th>
-      <th>Category</th>
+      <th>Budget</th>
+      <th>Categories</th>
       <th>Description</th>
       <th>Amount</th>
     </tr>
@@ -25,10 +26,191 @@
 
   <ng-template #bodyTemplate let-item>
     <tr>
-      <td>{{ item.date | date: 'short' }}</td>
-      <td>{{ item.category }}</td>
-      <td>{{ item.description }}</td>
-      <td>{{ item.amount | currency: selectedBudget()?.defaultCurrency }}</td>
+      <td>
+        <p-inplace
+          #dateInplace
+          (onActivate)="startEdit(item)"
+          (onDeactivate)="cancelEdit(item.id)"
+          [closable]="false"
+        >
+          <ng-template #display>{{ item.date | date: 'short' }}</ng-template>
+          <ng-template #content>
+            <div class="inline-edit-cell">
+              <p-datepicker
+                [(ngModel)]="editingValues()[item.id].date"
+                [appendTo]="'body'"
+                [showTime]="true"
+                ariaLabel="Transaction date"
+                size="small"
+              />
+              <p-button
+                (onClick)="saveEdit(item, dateInplace)"
+                [loading]="isLoading()"
+                aria-label="Save transaction date"
+                icon="pi pi-check"
+                severity="success"
+                size="small"
+              />
+              <p-button
+                (onClick)="dateInplace.deactivate()"
+                aria-label="Cancel editing transaction date"
+                icon="pi pi-times"
+                severity="secondary"
+                size="small"
+              />
+            </div>
+          </ng-template>
+        </p-inplace>
+      </td>
+      <td>
+        <p-inplace
+          #budgetInplace
+          (onActivate)="startEdit(item)"
+          (onDeactivate)="cancelEdit(item.id)"
+          [closable]="false"
+        >
+          <ng-template #display>{{ resolveBudgetName(item.budgetId) }}</ng-template>
+          <ng-template #content>
+            <div class="inline-edit-cell">
+              <p-select
+                [(ngModel)]="editingValues()[item.id].budgetId"
+                [options]="budgets()"
+                ariaLabel="Transaction budget"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Select budget"
+                size="small"
+              />
+              <p-button
+                (onClick)="saveEdit(item, budgetInplace)"
+                [loading]="isLoading()"
+                aria-label="Save transaction budget"
+                icon="pi pi-check"
+                severity="success"
+                size="small"
+              />
+              <p-button
+                (onClick)="budgetInplace.deactivate()"
+                aria-label="Cancel editing transaction budget"
+                icon="pi pi-times"
+                severity="secondary"
+                size="small"
+              />
+            </div>
+          </ng-template>
+        </p-inplace>
+      </td>
+      <td>
+        <p-inplace
+          #categoriesInplace
+          (onActivate)="startEdit(item)"
+          (onDeactivate)="cancelEdit(item.id)"
+          [closable]="false"
+        >
+          <ng-template #display>{{ resolveCategoryNames(item.categoryIds) }}</ng-template>
+          <ng-template #content>
+            <div class="inline-edit-cell">
+              <p-multiselect
+                [(ngModel)]="editingValues()[item.id].categoryIds"
+                [options]="categoryOptions()"
+                ariaLabel="Transaction categories"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Select categories"
+                size="small"
+              />
+              <p-button
+                (onClick)="saveEdit(item, categoriesInplace)"
+                [loading]="isLoading()"
+                aria-label="Save transaction categories"
+                icon="pi pi-check"
+                severity="success"
+                size="small"
+              />
+              <p-button
+                (onClick)="categoriesInplace.deactivate()"
+                aria-label="Cancel editing transaction categories"
+                icon="pi pi-times"
+                severity="secondary"
+                size="small"
+              />
+            </div>
+          </ng-template>
+        </p-inplace>
+      </td>
+      <td>
+        <p-inplace
+          #descriptionInplace
+          (onActivate)="startEdit(item)"
+          (onDeactivate)="cancelEdit(item.id)"
+          [closable]="false"
+        >
+          <ng-template #display>{{ item.description }}</ng-template>
+          <ng-template #content>
+            <div class="inline-edit-cell">
+              <input
+                [(ngModel)]="editingValues()[item.id].description"
+                aria-label="Transaction description"
+                pInputText
+                size="small"
+              />
+              <p-button
+                (onClick)="saveEdit(item, descriptionInplace)"
+                [loading]="isLoading()"
+                aria-label="Save transaction description"
+                icon="pi pi-check"
+                severity="success"
+                size="small"
+              />
+              <p-button
+                (onClick)="descriptionInplace.deactivate()"
+                aria-label="Cancel editing transaction description"
+                icon="pi pi-times"
+                severity="secondary"
+                size="small"
+              />
+            </div>
+          </ng-template>
+        </p-inplace>
+      </td>
+      <td>
+        <p-inplace
+          #amountInplace
+          (onActivate)="startEdit(item)"
+          (onDeactivate)="cancelEdit(item.id)"
+          [closable]="false"
+        >
+          <ng-template #display>{{
+            item.amount | currency: selectedBudget()?.defaultCurrency
+          }}</ng-template>
+          <ng-template #content>
+            <div class="inline-edit-cell">
+              <p-inputnumber
+                [(ngModel)]="editingValues()[item.id].amount"
+                [maxFractionDigits]="2"
+                [minFractionDigits]="2"
+                ariaLabel="Transaction amount"
+                mode="decimal"
+              />
+              <p-button
+                (onClick)="saveEdit(item, amountInplace)"
+                [loading]="isLoading()"
+                aria-label="Save transaction amount"
+                icon="pi pi-check"
+                severity="success"
+                size="small"
+              />
+              <p-button
+                (onClick)="amountInplace.deactivate()"
+                aria-label="Cancel editing transaction amount"
+                icon="pi pi-times"
+                severity="secondary"
+                size="small"
+              />
+            </div>
+          </ng-template>
+        </p-inplace>
+      </td>
     </tr>
   </ng-template>
 </app-paginated-table>

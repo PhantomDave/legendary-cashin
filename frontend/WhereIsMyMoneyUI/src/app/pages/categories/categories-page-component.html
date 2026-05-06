@@ -97,7 +97,12 @@
         </p-inplace>
       </td>
       <td>
-        <p-button (onClick)="deleteCategory($event, item.id)" icon="pi pi-trash" severity="danger" size="small"/>
+        <p-button
+          (onClick)="deleteCategory($event, item.id)"
+          icon="pi pi-trash"
+          severity="danger"
+          size="small"
+        />
       </td>
     </tr>
   </ng-template>
@@ -105,4 +110,7 @@
 
 <p-confirmdialog></p-confirmdialog>
 
-<app-create-category-component [visible]="isCreateCategoryModalVisible"/>
+<app-create-category-component
+  [visible]="isCreateCategoryModalVisible"
+  (categoryCreated)="onCategoryCreated()"
+/>

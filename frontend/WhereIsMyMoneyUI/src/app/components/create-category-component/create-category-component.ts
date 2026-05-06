@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, model } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, model, output } from '@angular/core';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { InputGroup } from 'primeng/inputgroup';
@@ -7,6 +7,7 @@ import { InputText } from 'primeng/inputtext';
 import { PrimeTemplate } from 'primeng/api';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CategoryService } from '../../services/category.service';
+import { Category } from '../../models/category/Category';
 
 @Component({
   selector: 'app-create-category-component',
@@ -31,6 +32,7 @@ export class CreateCategoryComponent {
     amount: [0, [Validators.required, Validators.min(0), Validators.pattern(/^\d+(\.\d{1,2})?$/)]],
   });
   private readonly categoryService = inject(CategoryService);
+  readonly categoryCreated = output<Category>();
 
   protected async onSubmit() {
     if (this.categoryForm.invalid) {
@@ -53,6 +55,7 @@ export class CreateCategoryComponent {
       categoryName: '',
       amount: 0,
     });
+    this.categoryCreated.emit(createdCategory);
   }
 
   protected isInvalid(controlName: 'categoryName' | 'amount'): boolean {

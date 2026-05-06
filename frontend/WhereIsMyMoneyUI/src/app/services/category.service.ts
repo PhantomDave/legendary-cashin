@@ -40,11 +40,14 @@ export class CategoryService {
     }
   }
 
-  async updateCategory(id: number, category: Omit<Category, 'id'>): Promise<Category | null> {
+  async updateCategory(
+    id: number,
+    category: Partial<Pick<Category, 'name' | 'budget'>>,
+  ): Promise<Category | null> {
     this.isLoading.set(true);
     this.error.set(null);
     try {
-      const updated = await this.api.put<Category>(`${this.baseApiUrl}${id}`, category);
+      const updated = await this.api.patch<Category>(`${this.baseApiUrl}${id}`, category);
       this.categories.update((current) => current.map((c) => (c.id === id ? updated : c)));
       return updated;
     } catch {

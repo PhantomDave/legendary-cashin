@@ -38,6 +38,31 @@ public sealed class BudgetsController(BudgetStore store) : ApiControllerBase
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
+    [HttpPatch("{id:long}")]
+    [ProducesResponseType<BudgetResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BudgetResponse>> Patch(long id, [FromBody] PatchBudgetRequest request)
+    {
+        if (request.Name is null && request.DefaultCurrency is null && request.Amount is null)
+            return BadRequest(new { message = "At least one field must be provided." });
+
+        long accountId = GetAccountId();
+        BudgetResponse? existing = await store.GetAsync(id);
+        if (existing is null || existing.AccountId != accountId)
+            return NotFound(new { message = $"Budget '{id}' was not found." });
+
+        BudgetResponse updated = existing with
+        {
+            Name = request.Name ?? existing.Name,
+            DefaultCurrency = request.DefaultCurrency ?? existing.DefaultCurrency,
+            Amount = request.Amount ?? existing.Amount
+        };
+
+        bool success = await store.UpdateAsync(id, updated);
+        return success ? Ok(updated) : NotFound(new { message = $"Budget '{id}' was not found." });
+    }
+
     [HttpDelete("{id:long}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

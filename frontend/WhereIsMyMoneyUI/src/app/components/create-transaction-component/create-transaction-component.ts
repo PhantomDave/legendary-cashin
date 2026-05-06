@@ -9,6 +9,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TransactionService } from '../../services/transaction.service';
 import { BudgetService } from '../../services/budget.service';
 import { Transaction } from '../../models/transaction/Transaction';
+import { CreateTransactionRequest } from '../../services/transaction.service';
 
 @Component({
   selector: 'app-create-transaction-component',
@@ -33,10 +34,9 @@ export class CreateTransactionComponent {
   private readonly selectedBudget = this.budgetService.selectedBudget;
 
   readonly transactionForm = this.formBuilder.group({
-    date: ['', [Validators.required]],
+    date: [null as Date | null, [Validators.required]],
     amount: [0, [Validators.required]],
-    description: [''],
-    category: [''],
+    description: ['', [Validators.required, Validators.minLength(3)]],
   });
 
   isInvalid(controlName: 'date' | 'amount'): boolean {
@@ -46,10 +46,19 @@ export class CreateTransactionComponent {
 
   onSubmit() {
     if (this.transactionForm.valid && this.selectedBudget()) {
-      const transactionData = {
-        ...this.transactionForm.value,
+      const { date, amount, description } = this.transactionForm.getRawValue();
+      if (!date || amount == null || description == null) {
+        return;
+      }
+
+      const transactionData: CreateTransactionRequest = {
+        date: date.toISOString(),
+        amount,
+        description: description.trim(),
         budgetId: this.selectedBudget()!.id,
-      } as Omit<Transaction, 'id'>;
+        categoryIds: [],
+      };
+
       this.transactionService.createTransaction(transactionData).then((created) => {
         if (created) {
           this.transactionCreated.emit(created);

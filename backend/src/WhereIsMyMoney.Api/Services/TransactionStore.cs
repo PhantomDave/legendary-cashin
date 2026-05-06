@@ -14,7 +14,18 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
 
     public async Task<TransactionResponse?> GetAsync(long id)
     {
-        Transaction? transaction = await db.Transactions.FindAsync(id);
+        Transaction? transaction = await db.Transactions
+            .Include(t => t.Categories)
+            .FirstOrDefaultAsync(t => t.Id == id);
+        return transaction is null ? null : ToResponse(transaction);
+    }
+
+    public async Task<TransactionResponse?> GetByIdAndAccountAsync(long id, long accountId)
+    {
+        Transaction? transaction = await db.Transactions
+            .Include(t => t.Categories)
+            .FirstOrDefaultAsync(t => t.Id == id && t.AccountId == accountId);
+
         return transaction is null ? null : ToResponse(transaction);
     }
 
@@ -23,6 +34,21 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
         return await db.Transactions
             .Select(t => ToResponse(t))
             .ToListAsync();
+    }
+
+    public async Task<bool> CategoryIdsBelongToAccountAsync(IReadOnlyCollection<int> categoryIds, long accountId)
+    {
+        if (categoryIds.Count == 0)
+            return true;
+
+        int distinctIds = categoryIds.Distinct().Count();
+        int existingIds = await db.Categories
+            .Where(c => c.AccountId == accountId && categoryIds.Contains(c.Id))
+            .Select(c => c.Id)
+            .Distinct()
+            .CountAsync();
+
+        return distinctIds == existingIds;
     }
 
     public async Task<IReadOnlyList<TransactionResponse>> GetAllByAccountId(long accountId)
@@ -110,7 +136,9 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
 
     public async Task<bool> UpdateAsync(long id, UpdateTransactionRequest value)
     {
-        Transaction? transaction = await db.Transactions.FindAsync(id);
+        Transaction? transaction = await db.Transactions
+            .Include(t => t.Categories)
+            .FirstOrDefaultAsync(t => t.Id == id);
         if (transaction is null) return false;
 
         transaction.Description = value.Description;
@@ -131,6 +159,40 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
         db.Transactions.Update(transaction);
         await db.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<TransactionResponse?> PatchAsync(long id, long accountId, PatchTransactionRequest value)
+    {
+        Transaction? transaction = await db.Transactions
+            .Include(t => t.Categories)
+            .FirstOrDefaultAsync(t => t.Id == id && t.AccountId == accountId);
+
+        if (transaction is null)
+            return null;
+
+        if (value.Description is not null)
+            transaction.Description = value.Description;
+
+        if (value.Amount.HasValue)
+            transaction.Amount = value.Amount.Value;
+
+        if (value.Date.HasValue)
+            transaction.Date = value.Date.Value;
+
+        if (value.BudgetId.HasValue)
+            transaction.BudgetId = value.BudgetId.Value;
+
+        if (value.CategoryIds is not null)
+        {
+            transaction.Categories = value.CategoryIds.Count == 0
+                ? []
+                : await db.Categories
+                    .Where(c => c.AccountId == accountId && value.CategoryIds.Contains(c.Id))
+                    .ToListAsync();
+        }
+
+        await db.SaveChangesAsync();
+        return ToResponse(transaction);
     }
 
     public async Task<bool> DeleteAsync(long id)

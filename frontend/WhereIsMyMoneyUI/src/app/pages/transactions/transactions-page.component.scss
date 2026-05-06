@@ -2,3 +2,8 @@
   display: block;
 }
 
+.inline-edit-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}

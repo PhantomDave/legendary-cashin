@@ -46,6 +46,27 @@ public class CategoriesController(CategoryStore store) : ApiControllerBase
         return success ? Ok(updated) : NotFound();
     }
 
+    [HttpPatch("{id:int}")]
+    public async Task<ActionResult<CategoryResponse>> PatchAsync(int id, [FromBody] PatchCategoryRequest request)
+    {
+        if (request.Name is null && request.Budget is null)
+            return BadRequest(new { message = "At least one field must be provided." });
+
+        long accountId = GetAccountId();
+        CategoryResponse? existing = await store.GetAsync(id);
+        if (existing is null || existing.AccountId != accountId)
+            return NotFound();
+
+        CategoryResponse updated = existing with
+        {
+            Name = request.Name ?? existing.Name,
+            Budget = request.Budget ?? existing.Budget
+        };
+
+        bool success = await store.UpdateAsync(id, updated);
+        return success ? Ok(updated) : NotFound();
+    }
+
     [HttpDelete("{id:int}")]
     public async Task<ActionResult<CategoryResponse>> DeleteAsync(int id)
     {
