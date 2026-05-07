@@ -25,6 +25,9 @@ import { SelectModule } from 'primeng/select';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { CategoryService } from '../../services/category.service';
 import { Category } from '../../models/category/Category';
+import { ConfirmationService } from 'primeng/api';
+import { ToastService } from '../../services/toast.service';
+import { ConfirmDialog } from 'primeng/confirmdialog';
 
 interface EditValues {
   date: Date;
@@ -50,7 +53,9 @@ interface EditValues {
     DatePickerModule,
     SelectModule,
     MultiSelectModule,
+    ConfirmDialog,
   ],
+  providers: [ConfirmationService],
   templateUrl: './transactions-page.component.html',
   styleUrl: './transactions-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -71,7 +76,8 @@ export class TransactionsPageComponent {
   readonly categoryOptions = computed(() =>
     this.categories().map((category) => ({ label: category.name, value: category.id })),
   );
-
+  private readonly confirmationService = inject(ConfirmationService);
+  private readonly toast = inject(ToastService);
   readonly transactions = signal<PaginatedResponse<Transaction> | null>(null);
   first = 0;
   rows = 10;
@@ -264,6 +270,35 @@ export class TransactionsPageComponent {
     }
 
     return patch;
+  }
+
+  deleteTransaction(event: Event, transactionId: number): void {
+    this.confirmationService.confirm({
+      target: event.target as EventTarget,
+      message: 'Do you want to delete this transaction?',
+      header: 'Delete Transaction',
+      icon: 'pi pi-info-circle',
+      rejectLabel: 'Cancel',
+      rejectButtonProps: {
+        label: 'Cancel',
+        severity: 'secondary',
+        outlined: true,
+      },
+      acceptButtonProps: {
+        label: 'Delete',
+        severity: 'danger',
+      },
+
+      accept: () => {
+        void this.transactionService.deleteTransaction(transactionId).then(() => {
+          this.toast.success('Transaction deleted');
+          const budgetId = this.selectedBudget()?.id;
+          if (budgetId != null) {
+            void this.loadTransactions(budgetId);
+          }
+        });
+      },
+    });
   }
 
   private haveSameIds(source: number[], target: number[]): boolean {

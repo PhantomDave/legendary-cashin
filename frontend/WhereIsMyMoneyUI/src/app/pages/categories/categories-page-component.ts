@@ -46,7 +46,7 @@ export class CategoriesPageComponent {
   rows = 10;
   currentPage = 1;
   isCreateCategoryModalVisible = false;
-  private confirmationService = inject(ConfirmationService);
+  private readonly confirmationService = inject(ConfirmationService);
   private readonly toast = inject(ToastService);
   private readonly categoryService = inject(CategoryService);
   readonly isLoading = this.categoryService.isLoading;

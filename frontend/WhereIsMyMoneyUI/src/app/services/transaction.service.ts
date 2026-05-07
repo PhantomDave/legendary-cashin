@@ -135,6 +135,19 @@ export class TransactionService {
     }
   }
 
+  async deleteTransaction(id: number): Promise<void> {
+    this.isLoading.set(true);
+    this.error.set(null);
+    try {
+      await this.api.delete(`${this.baseApiUrl}${id}`);
+      this.transactions.update((current) => current.filter((t) => t.id !== id));
+    } catch {
+      this.error.set('Failed to delete transaction.');
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
   clearTransactions(): void {
     this.transactions.set([]);
   }

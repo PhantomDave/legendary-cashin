@@ -197,7 +197,7 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
 
     public async Task<bool> DeleteAsync(long id)
     {
-        Transaction? transaction = await db.Transactions.FindAsync(id);
+        Transaction? transaction = await db.Transactions.FindAsync((int)id);
         if (transaction is null) return false;
 
         db.Transactions.Remove(transaction);

@@ -21,6 +21,7 @@
       <th>Categories</th>
       <th>Description</th>
       <th>Amount</th>
+      <th>Actions</th>
     </tr>
   </ng-template>
 
@@ -211,9 +212,19 @@
           </ng-template>
         </p-inplace>
       </td>
+      <td>
+        <p-button
+          (onClick)="deleteTransaction($event, item.id)"
+          icon="pi pi-trash"
+          severity="danger"
+          size="small"
+        />
+      </td>
     </tr>
   </ng-template>
 </app-paginated-table>
+
+<p-confirmDialog></p-confirmDialog>
 
 <app-create-transaction-component
   [(visible)]="isCreateTransactionDialogVisible"

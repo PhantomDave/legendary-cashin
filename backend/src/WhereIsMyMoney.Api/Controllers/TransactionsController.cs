@@ -122,4 +122,26 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
 
         return Ok(updated);
     }
+
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> DeleteTransaction(int id)
+    {
+        long accountId = GetAccountId();
+        TransactionResponse? existing = await store.GetByIdAndAccountAsync(id, accountId);
+        if (existing is null)
+            return NotFound(new { message = $"Transaction '{id}' was not found." });
+
+        bool success = await store.DeleteAsync(id);
+        if (success)
+        {
+            await budgetStore.UpdateBudgetAmount(existing.BudgetId, -existing.Amount);
+            return NoContent();
+        }
+        else
+        {
+            return NotFound(new { message = $"Transaction '{id}' was not found." });
+        }
+    }
 }
