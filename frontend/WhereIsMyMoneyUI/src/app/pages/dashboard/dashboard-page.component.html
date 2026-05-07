@@ -21,12 +21,36 @@
       </p>
     </p-card>
   }
-</section>
 
-<p-card header="Quick Actions">
-  <p>Wire real data sources in `core/services`, then keep each page focused on rendering.</p>
-  <div class="dashboard-actions">
-    <p-button label="Add transaction" icon="pi pi-plus" />
-    <p-button label="Import CSV" icon="pi pi-upload" severity="secondary" />
-  </div>
-</p-card>
+  <p-card header="Budget Status">
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Allocated</th>
+          <th>Spent</th>
+          <th>Remaining</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of categories(); track item.id) {
+          <tr>
+            <td>{{ item.name }}</td>
+            <td class="amount-cell">
+              {{ item.budget | currency: selectedBudget()?.defaultCurrency }}
+            </td>
+            <td class="amount-cell">
+              {{ getCategorySpent(item.id) | currency: selectedBudget()?.defaultCurrency }}
+            </td>
+            <td class="amount-cell">
+              {{
+                item.budget - getCategorySpent(item.id)
+                  | currency: selectedBudget()?.defaultCurrency
+              }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </p-card>
+</section>

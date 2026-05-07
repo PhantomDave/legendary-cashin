@@ -7,6 +7,7 @@ import { SectionHeaderComponent } from '../../components/section-header/section-
 import { DashboardMetric } from '../../models/dashboard-metric.model';
 import { BudgetService } from '../../services/budget.service';
 import { TransactionService } from '../../services/transaction.service';
+import { CategoryService } from '../../services/category.service';
 
 @Component({
   selector: 'app-dashboard-page',
@@ -20,6 +21,9 @@ export class DashboardPageComponent {
   readonly selectedBudget = computed(() => this.budgetService.selectedBudget());
   private readonly transactionService = inject(TransactionService);
   private readonly transactionMetrics = computed(() => this.transactionService.metrics());
+  private readonly monthTransactions = computed(() => this.transactionService.monthTransactions());
+  private readonly categoryService = inject(CategoryService);
+  readonly categories = this.categoryService.categories;
   readonly metrics = computed<DashboardMetric[]>(() => {
     const budget = this.selectedBudget();
     const tm = this.transactionMetrics();
@@ -52,14 +56,14 @@ export class DashboardPageComponent {
         isCurrency: true,
       },
       {
-        label: 'Predicted End of Month',
+        label: 'Predicted EOM',
         value: tm?.predictedEndOfMonth.toString() ?? '0',
         trend: formatTrend(tm?.predictedEndOfMonthTrend ?? null),
         severity: trendSeverity(tm?.predictedEndOfMonthTrend ?? null),
         isCurrency: true,
       },
       {
-        label: 'Balance 30 Days Ago',
+        label: '30 Days Ago',
         value: tm?.balance30DaysAgo.toString() ?? '0',
         trend: formatTrend(tm?.balance30DaysAgoTrend ?? null),
         severity: trendSeverity(tm?.balance30DaysAgoTrend ?? null),
@@ -73,8 +77,18 @@ export class DashboardPageComponent {
       const budget = this.selectedBudget();
       if (budget) {
         void this.transactionService.getMetrics(budget.id);
+        void this.transactionService.getMonthByBudgetId(budget.id);
+        void this.categoryService.getCategories();
+      } else {
+        this.transactionService.monthTransactions.set([]);
       }
     });
+  }
+
+  getCategorySpent(categoryId: number): number {
+    return this.monthTransactions()
+      .filter((transaction) => transaction.categoryIds.includes(categoryId))
+      .reduce((sum, transaction) => sum + Math.abs(Math.min(transaction.amount, 0)), 0);
   }
 }
 

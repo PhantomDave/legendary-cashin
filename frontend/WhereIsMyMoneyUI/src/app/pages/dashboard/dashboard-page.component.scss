@@ -2,7 +2,7 @@
   display: grid;
   gap: 1rem;
   margin-bottom: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
 }
 
 .dashboard-card__header {
@@ -24,3 +24,22 @@
   flex-wrap: wrap;
 }
 
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.35rem 0.5rem;
+  vertical-align: middle;
+}
+
+th {
+  text-align: left;
+}
+
+.amount-cell {
+  text-align: right;
+  white-space: nowrap;
+}

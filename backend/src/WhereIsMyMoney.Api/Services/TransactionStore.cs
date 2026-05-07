@@ -88,6 +88,30 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
             .ToPaginatedResponseAsync(request);
     }
 
+    public async Task<long?> GetLatestBudgetIdForAccountAsync(long accountId)
+    {
+        return await db.Budgets
+            .Where(b => b.AccountId == accountId)
+            .OrderByDescending(b => b.CreatedAtUtc)
+            .ThenByDescending(b => b.Id)
+            .Select(b => (long?)b.Id)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<IReadOnlyList<TransactionResponse>> GetByBudgetAndDateRangeAsync(
+        long accountId,
+        long budgetId,
+        DateTime from,
+        DateTime to)
+    {
+        return await db.Transactions
+            .Where(t => t.AccountId == accountId && t.BudgetId == budgetId && t.Date >= from && t.Date <= to)
+            .OrderByDescending(t => t.Date)
+            .ThenByDescending(t => t.Id)
+            .Select(t => ToResponse(t))
+            .ToListAsync();
+    }
+
     public async Task<IReadOnlyList<TransactionResponse>> GetByAccountAsync(long accountId)
     {
         return await db.Transactions

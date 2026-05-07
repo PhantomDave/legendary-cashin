@@ -42,6 +42,7 @@ export class TransactionService {
   readonly isLoading = signal(false);
   readonly error = signal<string | null>(null);
   readonly transactions = signal<Transaction[]>([]);
+  readonly monthTransactions = signal<Transaction[]>([]);
   readonly scheduledTransactions = signal<RecurringTransactions[]>([]);
   readonly metrics = signal<TransactionMetrics | null>(null);
 
@@ -114,6 +115,41 @@ export class TransactionService {
       return response;
     } catch (error) {
       this.error.set('Failed to load transactions for the selected budget.');
+      return null;
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  async getMonthByBudgetId(
+    budgetId: number,
+    from?: string,
+    to?: string,
+  ): Promise<Transaction[] | null> {
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    try {
+      const params: Record<string, string> = {};
+      if (from) {
+        params['from'] = from;
+      }
+      if (to) {
+        params['to'] = to;
+      }
+
+      const response = await this.api.get<Transaction[]>(
+        `${this.baseApiUrl}budget/${budgetId}/month`,
+        {
+          params,
+        },
+      );
+
+      this.monthTransactions.set(response);
+      return response;
+    } catch {
+      this.error.set('Failed to load month transactions for the selected budget.');
+      this.monthTransactions.set([]);
       return null;
     } finally {
       this.isLoading.set(false);
@@ -267,6 +303,7 @@ export class TransactionService {
 
   clearTransactions(): void {
     this.transactions.set([]);
+    this.monthTransactions.set([]);
     this.scheduledTransactions.set([]);
   }
 }

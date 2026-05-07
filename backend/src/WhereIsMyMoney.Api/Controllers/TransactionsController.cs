@@ -43,6 +43,65 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
             : Ok(transactions);
     }
 
+    [HttpGet("month")]
+    [ProducesResponseType<IReadOnlyList<TransactionResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<TransactionResponse>>> GetMonthTransactions(
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to)
+    {
+        long accountId = GetAccountId();
+
+        long? budgetId = await store.GetLatestBudgetIdForAccountAsync(accountId);
+        if (!budgetId.HasValue)
+            return NotFound(new { message = "No budget found for this account." });
+
+        return await GetMonthTransactionsInternal(accountId, budgetId.Value, from, to);
+    }
+
+    [HttpGet("budget/{budgetId:long}/month")]
+    [ProducesResponseType<IReadOnlyList<TransactionResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<TransactionResponse>>> GetMonthTransactionsByBudget(
+        long budgetId,
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to)
+    {
+        long accountId = GetAccountId();
+        return await GetMonthTransactionsInternal(accountId, budgetId, from, to);
+    }
+
+    private async Task<ActionResult<IReadOnlyList<TransactionResponse>>> GetMonthTransactionsInternal(
+        long accountId,
+        long budgetId,
+        DateTime? from,
+        DateTime? to)
+    {
+        bool budgetBelongsToAccount = await store.BudgetBelongsToAccountAsync(budgetId, accountId);
+        if (!budgetBelongsToAccount)
+            return BadRequest(new { message = $"Budget '{budgetId}' is invalid for this account." });
+
+        DateTime now = DateTime.UtcNow;
+        DateTime startOfCurrentMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        DateTime endOfCurrentMonth = startOfCurrentMonth.AddMonths(1).AddTicks(-1);
+
+        DateTime normalizedFrom = NormalizeUtc(from) ?? startOfCurrentMonth;
+        DateTime normalizedTo = NormalizeUtc(to) ?? endOfCurrentMonth;
+
+        if (normalizedFrom > normalizedTo)
+            return BadRequest(new { message = "'from' must be less than or equal to 'to'." });
+
+        IReadOnlyList<TransactionResponse> transactions = await store.GetByBudgetAndDateRangeAsync(
+            accountId,
+            budgetId,
+            normalizedFrom,
+            normalizedTo);
+
+        return Ok(transactions);
+    }
+
 
     [HttpPost]
     [ProducesResponseType<TransactionResponse>(StatusCodes.Status201Created)]
@@ -352,5 +411,17 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    private static DateTime? NormalizeUtc(DateTime? value)
+    {
+        if (!value.HasValue)
+            return null;
+
+        DateTime dateTime = value.Value;
+        if (dateTime.Kind == DateTimeKind.Unspecified)
+            return DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+
+        return dateTime.ToUniversalTime();
     }
 }
