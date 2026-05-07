@@ -7,6 +7,8 @@ using System.Text.Json;
 using Microsoft.IdentityModel.Tokens;
 using WhereIsMyMoney.Import.Models;
 
+#pragma warning disable IDE0008 // Use explicit type instead of 'var'
+
 namespace WhereIsMyMoney.Import.Services;
 
 public sealed class EnableBankingService
@@ -52,15 +54,15 @@ public sealed class EnableBankingService
         using RSA rsa = RSA.Create();
         rsa.ImportFromPem(File.ReadAllText(_privateKeyPath));
 
-        var signingCredentials = new SigningCredentials(
+        SigningCredentials signingCredentials = new SigningCredentials(
             new RsaSecurityKey(rsa),
             SecurityAlgorithms.RsaSha256)
         {
             CryptoProviderFactory = new CryptoProviderFactory { CacheSignatureProviders = false }
         };
 
-        var now = DateTime.UtcNow;
-        var jwt = new JwtSecurityToken(
+        DateTime now = DateTime.UtcNow;
+        JwtSecurityToken jwt = new JwtSecurityToken(
             audience: "api.enablebanking.com",
             issuer: "enablebanking.com",
             claims: [new Claim(JwtRegisteredClaimNames.Iat,

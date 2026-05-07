@@ -114,7 +114,7 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
 
     public async Task<TransactionResponse> CreateAsync(CreateTransactionRequest value)
     {
-        var transaction = new Transaction
+        Transaction transaction = new Transaction
         {
             AccountId = value.AccountId,
             BudgetId = value.BudgetId,
@@ -207,46 +207,46 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
 
     public async Task<TransactionMetricsResponse> GetMetricsAsync(long accountId, long budgetId)
     {
-        var now = DateTime.UtcNow;
-        var startOfYear = new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        var startOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var thirtyDaysAgo = now.AddDays(-30);
-        var sixtyDaysAgo = now.AddDays(-60);
+        DateTime now = DateTime.UtcNow;
+        DateTime startOfYear = new DateTime(now.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        DateTime startOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        DateTime thirtyDaysAgo = now.AddDays(-30);
+        DateTime sixtyDaysAgo = now.AddDays(-60);
 
         int daysInMonth = DateTime.DaysInMonth(now.Year, now.Month);
         int daysElapsed = Math.Max(now.Day, 1);
 
         // YTD
-        var ytd = await SumTransactionsAsync(accountId, budgetId, startOfYear, now);
+        decimal ytd = await SumTransactionsAsync(accountId, budgetId, startOfYear, now);
 
         // YTD same period last year
-        var lastYearStart = startOfYear.AddYears(-1);
-        var lastYearSameDay = now.AddYears(-1);
-        var ytdLastYear = await SumTransactionsAsync(accountId, budgetId, lastYearStart, lastYearSameDay);
+        DateTime lastYearStart = startOfYear.AddYears(-1);
+        DateTime lastYearSameDay = now.AddYears(-1);
+        decimal ytdLastYear = await SumTransactionsAsync(accountId, budgetId, lastYearStart, lastYearSameDay);
 
         // MTD
-        var mtd = await SumTransactionsAsync(accountId, budgetId, startOfMonth, now);
+        decimal mtd = await SumTransactionsAsync(accountId, budgetId, startOfMonth, now);
 
         // MTD same period last month
-        var startOfLastMonth = startOfMonth.AddMonths(-1);
+        DateTime startOfLastMonth = startOfMonth.AddMonths(-1);
         int daysInLastMonth = DateTime.DaysInMonth(startOfLastMonth.Year, startOfLastMonth.Month);
-        var sameDayLastMonth = startOfLastMonth.AddDays(Math.Min(daysElapsed, daysInLastMonth) - 1);
-        var mtdLastMonth = await SumTransactionsAsync(accountId, budgetId, startOfLastMonth, sameDayLastMonth);
+        DateTime sameDayLastMonth = startOfLastMonth.AddDays(Math.Min(daysElapsed, daysInLastMonth) - 1);
+        decimal mtdLastMonth = await SumTransactionsAsync(accountId, budgetId, startOfLastMonth, sameDayLastMonth);
 
         // Predicted EOM
-        var predictedEndOfMonth = (mtd / daysElapsed) * daysInMonth;
+        decimal predictedEndOfMonth = (mtd / daysElapsed) * daysInMonth;
 
         // Last month's actual total (for predicted EOM trend)
-        var endOfLastMonth = startOfMonth.AddDays(-1);
-        var lastMonthTotal = await SumTransactionsAsync(accountId, budgetId, startOfLastMonth, endOfLastMonth);
+        DateTime endOfLastMonth = startOfMonth.AddDays(-1);
+        decimal lastMonthTotal = await SumTransactionsAsync(accountId, budgetId, startOfLastMonth, endOfLastMonth);
 
         // Balance 30 days ago (cumulative sum up to that point)
-        var balance30DaysAgo = await db.Transactions
+        decimal balance30DaysAgo = await db.Transactions
             .Where(t => t.AccountId == accountId && t.BudgetId == budgetId && t.Date <= thirtyDaysAgo)
             .SumAsync(t => (decimal?)t.Amount) ?? 0m;
 
         // Balance 60 days ago
-        var balance60DaysAgo = await db.Transactions
+        decimal balance60DaysAgo = await db.Transactions
             .Where(t => t.AccountId == accountId && t.BudgetId == budgetId && t.Date <= sixtyDaysAgo)
             .SumAsync(t => (decimal?)t.Amount) ?? 0m;
 
@@ -262,14 +262,20 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
         );
     }
 
-    private async Task<decimal> SumTransactionsAsync(long accountId, long budgetId, DateTime from, DateTime to) =>
-        await db.Transactions
+    private async Task<decimal> SumTransactionsAsync(long accountId, long budgetId, DateTime from, DateTime to)
+    {
+        return await db.Transactions
             .Where(t => t.AccountId == accountId && t.BudgetId == budgetId && t.Date >= from && t.Date <= to)
             .SumAsync(t => (decimal?)t.Amount) ?? 0m;
+    }
 
-    private static decimal? Trend(decimal current, decimal previous) =>
-        previous == 0 ? null : Math.Round((current - previous) / Math.Abs(previous) * 100, 1);
+    private static decimal? Trend(decimal current, decimal previous)
+    {
+        return previous == 0 ? null : Math.Round((current - previous) / Math.Abs(previous) * 100, 1);
+    }
 
-    internal static TransactionResponse ToResponse(Transaction transaction) =>
-        new(transaction.Id, transaction.AccountId, transaction.Description, transaction.Amount, transaction.Date, transaction.BudgetId, transaction.Categories.Select(c => c.Id).ToList());
+    internal static TransactionResponse ToResponse(Transaction transaction)
+    {
+        return new(transaction.Id, transaction.AccountId, transaction.Description, transaction.Amount, transaction.Date, transaction.BudgetId, transaction.Categories.Select(c => c.Id).ToList());
+    }
 }

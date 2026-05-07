@@ -37,7 +37,7 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
     public async Task<ActionResult<PaginatedResponse<TransactionResponse>>> GetByBudget(int id, [FromQuery] PaginationRequest request)
     {
         long accountId = GetAccountId();
-        var transactions = await store.GetByBudgetPaginatedAsync(id, accountId, request);
+        PaginatedResponse<TransactionResponse> transactions = await store.GetByBudgetPaginatedAsync(id, accountId, request);
         return transactions.TotalCount == 0
             ? NotFound(new { message = $"Transactions for budget '{id}' were not found." })
             : Ok(transactions);
@@ -58,7 +58,7 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
             return BadRequest(new { message = $"Budget '{request.BudgetId}' is invalid for this account." });
         }
 
-        var transaction = await store.CreateAsync(request);
+        TransactionResponse transaction = await store.CreateAsync(request);
         await budgetStore.UpdateBudgetAmount(transaction.BudgetId, request.Amount);
 
         return CreatedAtAction(nameof(GetByBudget), new { id = transaction.BudgetId }, transaction);
@@ -142,6 +142,181 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
         else
         {
             return NotFound(new { message = $"Transaction '{id}' was not found." });
+        }
+    }
+
+    /// <summary>
+    /// Creates a new recurring transaction schedule.
+    /// </summary>
+    [HttpPost("recurring")]
+    [ProducesResponseType<RecurringTransactionResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RecurringTransactionResponse>> CreateRecurringTransaction(
+        CreateRecurringTransactionRequest request,
+        RecurringTransactionStore recurringStore,
+        RecurrenceEngine engine)
+    {
+        long accountId = GetAccountId();
+        request.AccountId = accountId;
+
+        // Validate budget belongs to account
+        bool budgetBelongsToAccount = await recurringStore.BudgetBelongsToAccountAsync(request.BudgetId, accountId);
+        if (!budgetBelongsToAccount)
+            return BadRequest(new { message = $"Budget '{request.BudgetId}' is invalid for this account." });
+
+        // Validate categories belong to account
+        if (request.CategoryIds.Count > 0)
+        {
+            bool categoriesBelongToAccount = await recurringStore.CategoriesBelongToAccountAsync(request.CategoryIds, accountId);
+            if (!categoriesBelongToAccount)
+                return BadRequest(new { message = "One or more categories are invalid for this account." });
+        }
+
+        // Validate date range
+        if (request.EndDate.HasValue && request.EndDate <= request.StartDate)
+            return BadRequest(new { message = "End date must be after start date." });
+
+        // Validate recurrence pattern
+        if (request.Interval < 1)
+            return BadRequest(new { message = "Interval must be at least 1." });
+
+        RecurringTransactionResponse recurring = await recurringStore.CreateAsync(request);
+
+        // Preview next occurrences for client
+        List<DateTime> nextOccurrences = engine.GetAllFutureOccurrences(
+            new RecurringTransaction
+            {
+                Frequency = request.Frequency,
+                Description = request.Description,
+                Interval = request.Interval,
+                StartDate = request.StartDate,
+                EndDate = request.EndDate,
+                MaxOccurrences = request.MaxOccurrences,
+                DaysOfWeek = request.DaysOfWeek,
+                DayOfMonth = request.DayOfMonth,
+                LastGeneratedDate = null,
+                GeneratedCount = 0,
+                IsActive = true
+            },
+            3);
+
+        return CreatedAtAction(nameof(GetRecurringTransaction), new { id = recurring.Id }, recurring);
+    }
+
+    /// <summary>
+    /// Gets a specific recurring transaction schedule.
+    /// </summary>
+    [HttpGet("recurring/{id:long}")]
+    [ProducesResponseType<RecurringTransactionResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RecurringTransactionResponse>> GetRecurringTransaction(
+        long id,
+        RecurringTransactionStore recurringStore)
+    {
+        long accountId = GetAccountId();
+        RecurringTransactionResponse? recurring = await recurringStore.GetByIdAndAccountAsync(id, accountId);
+
+        if (recurring is null)
+            return NotFound(new { message = $"Recurring transaction '{id}' not found." });
+
+        return Ok(recurring);
+    }
+
+    /// <summary>
+    /// Lists all recurring transaction schedules for the account.
+    /// </summary>
+    [HttpGet("recurring")]
+    [ProducesResponseType<IReadOnlyList<RecurringTransactionResponse>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<RecurringTransactionResponse>>> GetRecurringTransactions(
+        RecurringTransactionStore recurringStore)
+    {
+        long accountId = GetAccountId();
+        IReadOnlyList<RecurringTransactionResponse> recurring = await recurringStore.GetAllByAccountAsync(accountId);
+
+        return Ok(recurring);
+    }
+
+    /// <summary>
+    /// Updates an existing recurring transaction schedule.
+    /// </summary>
+    [HttpPatch("recurring/{id:long}")]
+    [ProducesResponseType<RecurringTransactionResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RecurringTransactionResponse>> UpdateRecurringTransaction(
+        long id,
+        UpdateRecurringTransactionRequest request,
+        RecurringTransactionStore recurringStore)
+    {
+        long accountId = GetAccountId();
+
+        RecurringTransactionResponse? existing = await recurringStore.GetByIdAndAccountAsync(id, accountId);
+        if (existing is null)
+            return NotFound(new { message = $"Recurring transaction '{id}' not found." });
+
+        try
+        {
+            RecurringTransactionResponse updated = await recurringStore.UpdateAsync(id, accountId, request);
+            return Ok(updated);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { message = $"Recurring transaction '{id}' not found." });
+        }
+    }
+
+    /// <summary>
+    /// Deletes a recurring transaction schedule.
+    /// </summary>
+    [HttpDelete("recurring/{id:long}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteRecurringTransaction(
+        long id,
+        RecurringTransactionStore recurringStore)
+    {
+        long accountId = GetAccountId();
+        bool deleted = await recurringStore.DeleteAsync(id, accountId);
+
+        if (!deleted)
+            return NotFound(new { message = $"Recurring transaction '{id}' not found." });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Gets a preview of the next N occurrences for a recurring transaction.
+    /// </summary>
+    [HttpPost("recurring/preview")]
+    [ProducesResponseType<List<DateTime>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public ActionResult<List<DateTime>> PreviewRecurringOccurrences(
+        CreateRecurringTransactionRequest request,
+        RecurrenceEngine engine)
+    {
+        try
+        {
+            RecurringTransaction tempRecurring = new RecurringTransaction
+            {
+                Frequency = request.Frequency,
+                Description = request.Description,
+                Interval = request.Interval,
+                StartDate = request.StartDate,
+                EndDate = request.EndDate,
+                MaxOccurrences = request.MaxOccurrences,
+                DaysOfWeek = request.DaysOfWeek,
+                DayOfMonth = request.DayOfMonth,
+                LastGeneratedDate = null,
+                GeneratedCount = 0,
+                IsActive = true
+            };
+
+            List<DateTime> occurrences = engine.GetAllFutureOccurrences(tempRecurring, 12);
+            return Ok(occurrences);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
     }
 }

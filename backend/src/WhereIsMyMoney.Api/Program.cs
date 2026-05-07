@@ -20,7 +20,7 @@ builder.Services.AddScoped<BudgetStore>();
 builder.Services.AddScoped<TransactionStore>();
 builder.Services.AddScoped<CategoryStore>();
 
-var jwtSettings = builder.Configuration.GetSection("Jwt");
+IConfigurationSection jwtSettings = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -37,6 +37,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 builder.Services.AddAuthorization();
+
+builder.Services.AddScoped<RecurrenceEngine>();
+builder.Services.AddScoped<RecurringTransactionStore>();
+builder.Services.AddHostedService<ScheduledTransactionProcessor>();
+
 
 WebApplication app = builder.Build();
 

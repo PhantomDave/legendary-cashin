@@ -1,7 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
 using WhereIsMyMoney.Api.Models;
 
 namespace WhereIsMyMoney.Api.Services;
 
+[SuppressMessage("Design", "CA1005: Consider a design where 'IStore' has no more than 2 type parameters")]
 public interface IStore<TResponse, TCreate, TUpdate>
     where TResponse : class
     where TCreate : class

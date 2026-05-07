@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
@@ -8,6 +9,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using WhereIsMyMoney.Import.Models;
 using WhereIsMyMoney.Import.Services;
+
+#pragma warning disable IDE0008 // Use explicit type instead of 'var'
+#pragma warning disable CS0168 // Variable declared but never used
+#pragma warning disable CS8321 // Local function is declared but never used
 
 IConfiguration config = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json", optional: false)
@@ -140,7 +145,6 @@ await callbackApp.StartAsync();
 // Start ngrok tunnel
 Console.Write("Starting ngrok tunnel... ");
 Process? ngrokProcess = null;
-string publicRedirectUrl;
 
 Console.ForegroundColor = ConsoleColor.Green;
 Console.WriteLine("OK");
@@ -270,8 +274,8 @@ foreach (AccountResource account in session.Accounts)
     }
 
     Console.WriteLine();
-    string fetchTx = Prompt("  Fetch transactions? (y/N): ").Trim().ToLowerInvariant();
-    if (fetchTx is "y" or "yes")
+    string fetchTx = Prompt("  Fetch transactions? (y/N): ").Trim().ToUpperInvariant();
+    if (fetchTx is "Y" or "YES")
     {
         string fromStr = Prompt("  Date from (yyyy-MM-dd, blank = 30 days ago): ").Trim();
         string toStr = Prompt("  Date to   (yyyy-MM-dd, blank = today):        ").Trim();
@@ -369,96 +373,6 @@ static int PromptInt(string message, int min, int max)
 
 static string Truncate(string s, int max) =>
     s.Length <= max ? s : s[..(max - 1)] + "…";
-
-static async Task<(Process NgrokProcess, string PublicUrl)> StartNgrokAsync(int port, string path)
-{
-    var psi = new ProcessStartInfo("ngrok", $"http {port} --log=stdout --log-format=json --request-header-add=ngrok-skip-browser-warning:true")
-    {
-        RedirectStandardOutput = true,
-        RedirectStandardError = true,
-        UseShellExecute = false
-    };
-    var proc = Process.Start(psi) ?? throw new InvalidOperationException("Failed to start ngrok process.");
-
-    // Stream ngrok's JSON log lines to the console in the background
-    _ = Task.Run(async () =>
-    {
-        string? line;
-        while ((line = await proc.StandardOutput.ReadLineAsync()) is not null)
-        {
-            if (string.IsNullOrWhiteSpace(line)) continue;
-            try
-            {
-                using var doc = JsonDocument.Parse(line);
-                var root = doc.RootElement;
-                string lvl = root.TryGetProperty("lvl", out var l) ? l.GetString() ?? "info" : "info";
-                string msg = root.TryGetProperty("msg", out var m) ? m.GetString() ?? line : line;
-                string err = root.TryGetProperty("err", out var e) ? e.GetString() ?? "" : "";
-
-                Console.ForegroundColor = lvl switch
-                {
-                    "eror" or "crit" => ConsoleColor.Red,
-                    "warn" => ConsoleColor.Yellow,
-                    "dbug" => ConsoleColor.DarkGray,
-                    _ => ConsoleColor.DarkCyan
-                };
-                Console.Write($"  [ngrok] {msg}");
-                if (!string.IsNullOrEmpty(err)) Console.Write($" — {err}");
-                Console.WriteLine();
-                Console.ResetColor();
-            }
-            catch
-            {
-                Console.ForegroundColor = ConsoleColor.DarkCyan;
-                Console.WriteLine($"  [ngrok] {line}");
-                Console.ResetColor();
-            }
-        }
-    });
-
-    _ = Task.Run(async () =>
-    {
-        string? line;
-        while ((line = await proc.StandardError.ReadLineAsync()) is not null)
-        {
-            if (!string.IsNullOrWhiteSpace(line))
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"  [ngrok stderr] {line}");
-                Console.ResetColor();
-            }
-        }
-    });
-
-    // Poll ngrok's local API until tunnel is ready (up to 10 seconds)
-    using var http = new System.Net.Http.HttpClient();
-    string publicUrl = string.Empty;
-    for (int i = 0; i < 20; i++)
-    {
-        await Task.Delay(500);
-        try
-        {
-            string json = await http.GetStringAsync("http://localhost:4040/api/tunnels");
-            using var doc = JsonDocument.Parse(json);
-            foreach (var tunnel in doc.RootElement.GetProperty("tunnels").EnumerateArray())
-            {
-                string url = tunnel.GetProperty("public_url").GetString() ?? string.Empty;
-                if (url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                {
-                    publicUrl = url.TrimEnd('/') + path;
-                    break;
-                }
-            }
-            if (!string.IsNullOrEmpty(publicUrl)) break;
-        }
-        catch { /* not ready yet */ }
-    }
-
-    if (string.IsNullOrEmpty(publicUrl))
-        throw new InvalidOperationException("ngrok tunnel did not become ready in time. Is ngrok authenticated? Run: ngrok config add-authtoken <your-token>");
-
-    return (proc, publicUrl);
-}
 
 static void OpenBrowser(string url)
 {

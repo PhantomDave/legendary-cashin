@@ -5,7 +5,9 @@ namespace WhereIsMyMoney.Api.Controllers;
 
 public abstract class ApiControllerBase : ControllerBase
 {
-    protected long GetAccountId() =>
-        long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
+    protected long GetAccountId()
+    {
+        return long.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? User.FindFirstValue("sub")!);
+    }
 }

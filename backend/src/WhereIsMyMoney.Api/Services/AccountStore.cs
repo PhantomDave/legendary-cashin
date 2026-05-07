@@ -36,7 +36,7 @@ public sealed class AccountStore(AppDbContext db) : IStore<AccountResponse, Crea
 
     public async Task<AccountResponse> CreateAsync(CreateAccountRequest request)
     {
-        var account = new Account
+        Account account = new Account
         {
             Name = request.Username,
             Email = request.Email,
@@ -73,8 +73,10 @@ public sealed class AccountStore(AppDbContext db) : IStore<AccountResponse, Crea
         return true;
     }
 
-    internal static AccountResponse ToResponse(Account account) =>
-        new(account.Id, account.Name, account.Email);
+    internal static AccountResponse ToResponse(Account account)
+    {
+        return new(account.Id, account.Name, account.Email);
+    }
 
     private static string HashPassword(string password)
     {
@@ -82,8 +84,8 @@ public sealed class AccountStore(AppDbContext db) : IStore<AccountResponse, Crea
         const int hashSize = 32;       // 256-bit derived key
         const int iterations = 350_000; // OWASP recommended minimum for PBKDF2-HMAC-SHA256
 
-        var salt = RandomNumberGenerator.GetBytes(saltSize);
-        var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, hashSize);
+        byte[] salt = RandomNumberGenerator.GetBytes(saltSize);
+        byte[] hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, hashSize);
 
         // Format: {iterations}${algorithm}${base64(salt)}${base64(hash)}
         return $"{iterations}$SHA256${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
@@ -91,15 +93,15 @@ public sealed class AccountStore(AppDbContext db) : IStore<AccountResponse, Crea
 
     public static bool VerifyPassword(string password, string passwordHash)
     {
-        var parts = passwordHash.Split('$');
+        string[] parts = passwordHash.Split('$');
         if (parts.Length != 4) return false;
 
-        if (!int.TryParse(parts[0], out var iterations)) return false;
-        var algorithm = new HashAlgorithmName(parts[1]);
-        var salt = Convert.FromBase64String(parts[2]);
-        var expectedHash = Convert.FromBase64String(parts[3]);
+        if (!int.TryParse(parts[0], out int iterations)) return false;
+        HashAlgorithmName algorithm = new HashAlgorithmName(parts[1]);
+        byte[] salt = Convert.FromBase64String(parts[2]);
+        byte[] expectedHash = Convert.FromBase64String(parts[3]);
 
-        var actualHash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, algorithm, expectedHash.Length);
+        byte[] actualHash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, algorithm, expectedHash.Length);
 
         return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
     }

@@ -41,7 +41,7 @@ public class CategoriesController(CategoryStore store) : ApiControllerBase
         if (existing is null || existing.AccountId != accountId)
             return NotFound();
 
-        var updated = existing with { Name = request.Name, Budget = request.Budget };
+        CategoryResponse updated = existing with { Name = request.Name, Budget = request.Budget };
         bool success = await store.UpdateAsync(id, updated);
         return success ? Ok(updated) : NotFound();
     }

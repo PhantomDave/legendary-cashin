@@ -10,6 +10,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Budget> Budgets => Set<Budget>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
+    public DbSet<RecurringTransaction> RecurringTransactions => Set<RecurringTransaction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -61,6 +62,26 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
               .WithMany()
               .HasForeignKey(e => e.BudgetId)
               .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<RecurringTransaction>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Description).HasMaxLength(256);
+            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.CreatedAtUtc).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.UpdatedAtUtc).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasOne<Account>()
+                .WithMany()
+                .HasForeignKey(e => e.AccountId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<Budget>()
+                .WithMany()
+                .HasForeignKey(e => e.BudgetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.IsActive, e.LastGeneratedDate, e.AccountId })
+                .HasDatabaseName("idx_active_recurring_by_date");
         });
     }
 }

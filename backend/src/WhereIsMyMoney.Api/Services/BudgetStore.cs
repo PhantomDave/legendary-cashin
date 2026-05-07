@@ -40,7 +40,7 @@ public sealed class BudgetStore(AppDbContext db) : IStore<BudgetResponse, Budget
 
     public async Task<BudgetResponse> CreateAsync(BudgetResponse value)
     {
-        var budget = new Budget
+        Budget budget = new Budget
         {
             AccountId = value.AccountId,
             Name = value.Name,
@@ -81,7 +81,7 @@ public sealed class BudgetStore(AppDbContext db) : IStore<BudgetResponse, Budget
 
     public async Task<BudgetResponse> CreateAsync(long accountId, CreateBudgetRequest request)
     {
-        var budget = new Budget
+        Budget budget = new Budget
         {
             AccountId = accountId,
             Name = request.Name,
@@ -108,6 +108,8 @@ public sealed class BudgetStore(AppDbContext db) : IStore<BudgetResponse, Budget
         return true;
     }
 
-    internal static BudgetResponse ToResponse(Budget budget) =>
-        new(budget.Id, budget.AccountId, budget.Name, budget.DefaultCurrency, budget.Amount, budget.CreatedAtUtc);
+    internal static BudgetResponse ToResponse(Budget budget)
+    {
+        return new(budget.Id, budget.AccountId, budget.Name, budget.DefaultCurrency, budget.Amount, budget.CreatedAtUtc);
+    }
 }

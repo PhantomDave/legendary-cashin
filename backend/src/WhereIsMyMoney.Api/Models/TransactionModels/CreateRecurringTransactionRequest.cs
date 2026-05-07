@@ -1,0 +1,23 @@
+using WhereIsMyMoney.Api.Models.TransactionModels;
+
+namespace WhereIsMyMoney.Api.Models.TransactionModels
+{
+    public class CreateRecurringTransactionRequest
+    {
+        public required string Description { get; set; }
+        public decimal Amount { get; set; }
+        public long BudgetId { get; set; }
+        public List<int> CategoryIds { get; set; } = [];
+
+        public RecurrenceFrequency Frequency { get; set; }
+        public int Interval { get; set; } = 1;
+        public DateTime StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public int? MaxOccurrences { get; set; }
+
+        public IReadOnlyList<DayOfWeek>? DaysOfWeek { get; set; }
+        public int? DayOfMonth { get; set; }
+
+        public long AccountId { get; set; }
+    }
+}

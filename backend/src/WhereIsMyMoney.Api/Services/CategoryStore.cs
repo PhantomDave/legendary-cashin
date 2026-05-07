@@ -42,7 +42,7 @@ public sealed class CategoryStore(AppDbContext db) : IStore<CategoryResponse, Cr
 
     public async Task<CategoryResponse> CreateAsync(CreateCategoryRequest request)
     {
-        var category = new Category
+        Category category = new Category
         {
             Name = request.Name,
             Budget = request.Budget,
@@ -78,7 +78,8 @@ public sealed class CategoryStore(AppDbContext db) : IStore<CategoryResponse, Cr
         return true;
     }
 
-    internal static CategoryResponse ToResponse(Category category) =>
-        new(category.Id, category.AccountId, category.Name, category.Budget);
-
+    internal static CategoryResponse ToResponse(Category category)
+    {
+        return new(category.Id, category.AccountId, category.Name, category.Budget);
+    }
 }

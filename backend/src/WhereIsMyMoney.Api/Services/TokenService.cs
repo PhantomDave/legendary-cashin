@@ -10,10 +10,10 @@ public sealed class TokenService(IConfiguration configuration)
 {
     public string GenerateToken(Account account)
     {
-        var jwtSettings = configuration.GetSection("Jwt");
+        IConfigurationSection jwtSettings = configuration.GetSection("Jwt");
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
+        SigningCredentials credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         Claim[] claims =
         [
@@ -23,7 +23,7 @@ public sealed class TokenService(IConfiguration configuration)
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         ];
 
-        var token = new JwtSecurityToken(
+        JwtSecurityToken token = new JwtSecurityToken(
             issuer: jwtSettings["Issuer"],
             audience: jwtSettings["Audience"],
             claims: claims,
