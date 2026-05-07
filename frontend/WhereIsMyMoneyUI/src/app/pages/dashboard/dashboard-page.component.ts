@@ -4,6 +4,9 @@ import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 import { CurrencyPipe } from '@angular/common';
 import { SectionHeaderComponent } from '../../components/section-header/section-header.component';
+import { CategorySpendingChartComponent } from '../../components/category-spending-chart/category-spending-chart.component';
+import { BudgetUtilizationChartComponent } from '../../components/budget-utilization-chart/budget-utilization-chart.component';
+import { MonthlyTrendChartComponent } from '../../components/monthly-trend-chart/monthly-trend-chart.component';
 import { DashboardMetric } from '../../models/dashboard-metric.model';
 import { BudgetService } from '../../services/budget.service';
 import { TransactionService } from '../../services/transaction.service';
@@ -11,7 +14,16 @@ import { CategoryService } from '../../services/category.service';
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [CardModule, ButtonModule, TagModule, SectionHeaderComponent, CurrencyPipe],
+  imports: [
+    CardModule,
+    ButtonModule,
+    TagModule,
+    SectionHeaderComponent,
+    CurrencyPipe,
+    CategorySpendingChartComponent,
+    BudgetUtilizationChartComponent,
+    MonthlyTrendChartComponent,
+  ],
   templateUrl: './dashboard-page.component.html',
   styleUrl: './dashboard-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,9 +33,13 @@ export class DashboardPageComponent {
   readonly selectedBudget = computed(() => this.budgetService.selectedBudget());
   private readonly transactionService = inject(TransactionService);
   private readonly transactionMetrics = computed(() => this.transactionService.metrics());
-  private readonly monthTransactions = computed(() => this.transactionService.monthTransactions());
+  readonly monthTransactions = computed(() => this.transactionService.monthTransactions());
+  readonly monthlySummary = computed(() => this.transactionService.monthlySummary());
   private readonly categoryService = inject(CategoryService);
   readonly categories = this.categoryService.categories;
+  readonly isChartLoading = computed(
+    () => this.transactionService.isLoading() || this.categoryService.isLoading(),
+  );
   readonly metrics = computed<DashboardMetric[]>(() => {
     const budget = this.selectedBudget();
     const tm = this.transactionMetrics();
@@ -78,17 +94,13 @@ export class DashboardPageComponent {
       if (budget) {
         void this.transactionService.getMetrics(budget.id);
         void this.transactionService.getMonthByBudgetId(budget.id);
+        void this.transactionService.getMonthlySummary(budget.id);
         void this.categoryService.getCategories();
       } else {
         this.transactionService.monthTransactions.set([]);
+        this.transactionService.monthlySummary.set([]);
       }
     });
-  }
-
-  getCategorySpent(categoryId: number): number {
-    return this.monthTransactions()
-      .filter((transaction) => transaction.categoryIds.includes(categoryId))
-      .reduce((sum, transaction) => sum + Math.abs(Math.min(transaction.amount, 0)), 0);
   }
 }
 

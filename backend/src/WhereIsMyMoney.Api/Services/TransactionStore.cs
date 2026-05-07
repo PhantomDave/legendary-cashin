@@ -286,6 +286,41 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
         );
     }
 
+    public async Task<IReadOnlyList<MonthlySummaryResponse>> GetMonthlySummaryAsync(long accountId, long budgetId)
+    {
+        DateTime now = DateTime.UtcNow;
+        DateTime currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        DateTime firstMonthStart = currentMonthStart.AddMonths(-5);
+        DateTime endExclusive = currentMonthStart.AddMonths(1);
+
+        List<MonthlySummaryResponse> aggregates = await db.Transactions
+            .Where(t =>
+                t.AccountId == accountId &&
+                t.BudgetId == budgetId &&
+                t.Date >= firstMonthStart &&
+                t.Date < endExclusive)
+            .GroupBy(t => new { t.Date.Year, t.Date.Month })
+            .Select(g => new MonthlySummaryResponse(
+                g.Key.Year,
+                g.Key.Month,
+                g.Where(t => t.Amount > 0).Sum(t => (decimal?)t.Amount) ?? 0m,
+                Math.Abs(g.Where(t => t.Amount < 0).Sum(t => (decimal?)t.Amount) ?? 0m)))
+            .ToListAsync();
+
+        Dictionary<(int Year, int Month), MonthlySummaryResponse> lookup = aggregates.ToDictionary(
+            m => (m.Year, m.Month));
+
+        return Enumerable.Range(0, 6)
+            .Select(offset =>
+            {
+                DateTime monthStart = firstMonthStart.AddMonths(offset);
+                return lookup.TryGetValue((monthStart.Year, monthStart.Month), out MonthlySummaryResponse? summary)
+                    ? summary
+                    : new MonthlySummaryResponse(monthStart.Year, monthStart.Month, 0m, 0m);
+            })
+            .ToList();
+    }
+
     private async Task<decimal> SumTransactionsAsync(long accountId, long budgetId, DateTime from, DateTime to)
     {
         return await db.Transactions

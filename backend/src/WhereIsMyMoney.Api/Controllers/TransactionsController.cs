@@ -23,6 +23,20 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
         return Ok(await store.GetMetricsAsync(accountId, budgetId));
     }
 
+    [HttpGet("budget/{id:long}/monthly-summary")]
+    [ProducesResponseType<IReadOnlyList<MonthlySummaryResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<IReadOnlyList<MonthlySummaryResponse>>> GetMonthlySummary(long id)
+    {
+        long accountId = GetAccountId();
+
+        bool budgetBelongsToAccount = await store.BudgetBelongsToAccountAsync(id, accountId);
+        if (!budgetBelongsToAccount)
+            return BadRequest(new { message = $"Budget '{id}' is invalid for this account." });
+
+        return Ok(await store.GetMonthlySummaryAsync(accountId, id));
+    }
+
     [HttpGet]
     [ProducesResponseType<PaginatedResponse<TransactionResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PaginatedResponse<TransactionResponse>>> GetMyTransactions([FromQuery] PaginationRequest request)

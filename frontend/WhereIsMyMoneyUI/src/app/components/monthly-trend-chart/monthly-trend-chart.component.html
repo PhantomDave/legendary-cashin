@@ -1,0 +1,18 @@
+<section class="widget">
+  <h3>Monthly Trend</h3>
+
+  @if (loading()) {
+    <p-skeleton height="18rem" />
+  } @else if (!hasData()) {
+    <p-message severity="info" text="No monthly trend data available." />
+  } @else {
+    <div class="chart-container">
+      <p-chart
+        type="line"
+        [data]="chartData()"
+        [options]="chartOptions()"
+        [attr.aria-label]="'Monthly income and expenses trend line chart'"
+      />
+    </div>
+  }
+</section>

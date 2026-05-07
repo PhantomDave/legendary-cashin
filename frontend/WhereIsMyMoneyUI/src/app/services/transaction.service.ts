@@ -4,6 +4,7 @@ import { TransactionMetrics } from '../models/transaction/TransactionMetrics';
 import { ApiService } from './api.service';
 import { PaginatedResponse } from '../models/api/paginated-response.model';
 import { RecurringTransactions } from '../models/transaction/ScheduledTransaction';
+import { MonthlySummary } from '../models/transaction/MonthlySummary';
 
 export interface CreateTransactionRequest {
   description: string;
@@ -43,6 +44,7 @@ export class TransactionService {
   readonly error = signal<string | null>(null);
   readonly transactions = signal<Transaction[]>([]);
   readonly monthTransactions = signal<Transaction[]>([]);
+  readonly monthlySummary = signal<MonthlySummary[]>([]);
   readonly scheduledTransactions = signal<RecurringTransactions[]>([]);
   readonly metrics = signal<TransactionMetrics | null>(null);
 
@@ -150,6 +152,24 @@ export class TransactionService {
     } catch {
       this.error.set('Failed to load month transactions for the selected budget.');
       this.monthTransactions.set([]);
+      return null;
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  async getMonthlySummary(budgetId: number): Promise<MonthlySummary[] | null> {
+    this.isLoading.set(true);
+    this.error.set(null);
+    try {
+      const response = await this.api.get<MonthlySummary[]>(
+        `${this.baseApiUrl}budget/${budgetId}/monthly-summary`,
+      );
+      this.monthlySummary.set(response);
+      return response;
+    } catch {
+      this.error.set('Failed to load monthly summary for the selected budget.');
+      this.monthlySummary.set([]);
       return null;
     } finally {
       this.isLoading.set(false);
@@ -304,6 +324,7 @@ export class TransactionService {
   clearTransactions(): void {
     this.transactions.set([]);
     this.monthTransactions.set([]);
+    this.monthlySummary.set([]);
     this.scheduledTransactions.set([]);
   }
 }
