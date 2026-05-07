@@ -35,7 +35,7 @@
           <ng-template #content>
             <div class="inline-edit-cell">
               <input
-                [(ngModel)]="editingValues()[item.id].name"
+                [(ngModel)]="getEditingValue(item.id).name"
                 aria-label="Category name"
                 pInputText
                 size="small"
@@ -70,7 +70,7 @@
           <ng-template #content>
             <div class="inline-edit-cell">
               <p-inputnumber
-                [(ngModel)]="editingValues()[item.id].budget"
+                [(ngModel)]="getEditingValue(item.id).budget"
                 [maxFractionDigits]="2"
                 [minFractionDigits]="2"
                 aria-label="Category budget"

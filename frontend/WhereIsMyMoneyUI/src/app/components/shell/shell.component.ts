@@ -126,7 +126,7 @@ export class ShellComponent implements OnInit {
     }
 
     try {
-      const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = parts[1]!.replace(/-/g, '+').replace(/_/g, '/');
       const decoded = atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, '='));
       return JSON.parse(decoded) as Record<string, unknown>;
     } catch {

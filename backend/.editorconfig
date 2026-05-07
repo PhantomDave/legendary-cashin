@@ -9,6 +9,46 @@ indent_style = space
 indent_size = 4
 
 [*.cs]
+# Nullable Reference Types - Maximum Type Checking
+dotnet_diagnostic.CS8600.severity = error    # Null reference assignment
+dotnet_diagnostic.CS8601.severity = error    # Null reference return
+dotnet_diagnostic.CS8602.severity = error    # Possible dereference of null
+dotnet_diagnostic.CS8603.severity = error    # Possible null reference return
+dotnet_diagnostic.CS8604.severity = error    # Possible null argument
+dotnet_diagnostic.CS8618.severity = error    # Non-nullable property not initialized
+dotnet_diagnostic.CS8625.severity = error    # Cannot convert null to non-nullable
+dotnet_diagnostic.CS8629.severity = error    # Nullable value type may be null
+dotnet_diagnostic.CS8630.severity = error    # Invalid nullable context for array element
+
+# Code Analysis - Type Safety Rules
+dotnet_diagnostic.CA1018.severity = warning  # Mark attributes with AttributeUsageAttribute
+dotnet_diagnostic.CA1012.severity = warning  # Abstract types should not have constructors
+dotnet_diagnostic.CA1010.severity = warning  # Collections should implement generic interface
+dotnet_diagnostic.CA1005.severity = warning  # Avoid excessive parameters on generic types
+dotnet_diagnostic.CA1000.severity = warning  # Do not declare static members on generic types
+dotnet_diagnostic.CA1707.severity = warning  # Identifiers should not contain underscores
+
+# Null checking and coalescing
+dotnet_diagnostic.IDE0031.severity = suggestion  # Use null propagation
+dotnet_diagnostic.IDE0029.severity = suggestion  # Use coalesce expression
+dotnet_diagnostic.IDE0030.severity = suggestion  # Use coalesce expression
+dotnet_diagnostic.IDE0074.severity = suggestion  # Use coalesce compound assignment
+
+# Pattern Matching (Type Safety)
+dotnet_diagnostic.IDE0078.severity = suggestion  # Use pattern matching
+
+# Null check improvements
+dotnet_diagnostic.IDE0041.severity = suggestion  # Use is null check
+dotnet_diagnostic.IDE0150.severity = warning     # Prefer null check over type check
+
+# Unused code detection
+dotnet_diagnostic.IDE0051.severity = warning     # Remove unused private members
+dotnet_diagnostic.IDE0052.severity = warning     # Remove unread private members
+dotnet_diagnostic.IDE0060.severity = warning     # Remove unused parameters
+dotnet_diagnostic.IDE0035.severity = warning     # Remove unreachable code
+dotnet_diagnostic.CS0618.severity = warning      # Type/member is obsolete
+
+# Formatting and Structure
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false
 
@@ -17,17 +57,85 @@ csharp_indent_case_contents = true
 csharp_indent_case_contents_when_block = true
 csharp_indent_labels = one_less_than_current
 
-csharp_style_var_for_built_in_types = false:suggestion
-csharp_style_var_when_type_is_apparent = false:suggestion
-csharp_style_var_elsewhere = false:suggestion
+# Variable declaration preferences
+csharp_style_var_for_built_in_types = false:warning
+csharp_style_var_when_type_is_apparent = false:warning
+csharp_style_var_elsewhere = false:warning
 
+# Qualification preferences
 dotnet_style_qualification_for_field = false:suggestion
 dotnet_style_qualification_for_property = false:suggestion
 dotnet_style_qualification_for_method = false:suggestion
 dotnet_style_qualification_for_event = false:suggestion
 
+# This expression
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+
+# Accessibility modifiers
+dotnet_style_require_accessibility_modifiers = all:warning
+
+# Expression preferences
+dotnet_style_object_initializer = true:suggestion
+dotnet_style_collection_initializer = true:suggestion
+dotnet_style_explicit_tuple_names = true:suggestion
+
+# Readonly preferences
+dotnet_style_readonly_field = true:warning
+
+# Async/await
+csharp_style_inlined_variable_declaration = true:suggestion
+
+# Other important diagnostics
 dotnet_diagnostic.CA1305.severity = suggestion
 dotnet_diagnostic.IDE0005.severity = suggestion
 dotnet_diagnostic.IDE0055.severity = warning
+
+# Additional Type Safety Rules
+dotnet_diagnostic.IDE0018.severity = warning       # Inline variable declaration
+dotnet_diagnostic.IDE0019.severity = warning       # Pattern matching
+dotnet_diagnostic.IDE0020.severity = warning       # Pattern matching with cast
+dotnet_diagnostic.IDE0021.severity = warning       # Expression body for constructors
+dotnet_diagnostic.IDE0022.severity = warning       # Expression body for methods
+dotnet_diagnostic.IDE0025.severity = warning       # Expression body for properties
+dotnet_diagnostic.IDE0026.severity = warning       # Expression body for indexers
+dotnet_diagnostic.IDE0027.severity = warning       # Expression body for accessors
+dotnet_diagnostic.IDE0045.severity = suggestion    # Conditional expression for assignment
+dotnet_diagnostic.IDE0046.severity = suggestion    # Conditional expression for return
+dotnet_diagnostic.IDE0062.severity = suggestion    # Make local function static
+dotnet_diagnostic.IDE0066.severity = suggestion    # Use switch expression
+dotnet_diagnostic.IDE0083.severity = suggestion    # Use pattern matching (not operator)
+
+# Method invocation style
+csharp_style_throw_expression = true:suggestion
+csharp_style_prefer_simple_using_statement = true:warning
+csharp_style_prefer_local_over_anonymous_function = true:suggestion
+csharp_style_prefer_static_anonymous_function = true:warning
+
+# Null checking
+csharp_style_conditional_delegate_call = true:warning
+dotnet_style_coalesce_expression = true:warning
+dotnet_style_null_propagation = true:warning
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:warning
+
+# Other important diagnostics
+dotnet_diagnostic.CA1308.severity = warning       # Normalize strings to uppercase
+dotnet_diagnostic.CA1309.severity = warning       # Use ordinal string comparison
+dotnet_diagnostic.CA1311.severity = warning       # Specify StringComparison for clarity
+dotnet_diagnostic.CA1310.severity = warning       # Specify StringComparison explicitly
+dotnet_diagnostic.CA1315.severity = warning       # String.Equals should be used
+dotnet_diagnostic.CA1711.severity = warning       # Identifiers should not have incorrect suffix
+dotnet_diagnostic.CA1712.severity = warning       # Do not prefix enum values with type name
+dotnet_diagnostic.CA1716.severity = warning       # Identifiers should not match keywords
+dotnet_diagnostic.CA1720.severity = warning       # Identifiers should not contain type names
+dotnet_diagnostic.CA1724.severity = warning       # Type names should not match namespaces
+dotnet_diagnostic.CA1725.severity = warning       # Parameter names should match base declaration
+dotnet_diagnostic.CA1812.severity = warning       # Avoid uninstantiated internal classes
+dotnet_diagnostic.CA1813.severity = warning       # Avoid unsealed attributes
+dotnet_diagnostic.CA1815.severity = warning       # Override Equals and operator equals
+dotnet_diagnostic.CA1819.severity = warning       # Properties should not return arrays
+dotnet_diagnostic.CA1822.severity = warning       # Mark members as static
+dotnet_diagnostic.CA1823.severity = warning       # Avoid unused private fields
 
 

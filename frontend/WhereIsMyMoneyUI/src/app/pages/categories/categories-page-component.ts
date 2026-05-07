@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { PaginatorState } from 'primeng/paginator';
 import { PaginatedTableComponent } from '../../components/paginated-table/paginated-table.component';
 import { SectionHeaderComponent } from '../../components/section-header/section-header.component';
@@ -56,6 +56,10 @@ export class CategoriesPageComponent {
     effect(() => {
       this.loadCategories();
     });
+  }
+
+  getEditingValue(id: number): EditValues {
+    return this.editingValues()[id]!;
   }
 
   addCategory(): void {

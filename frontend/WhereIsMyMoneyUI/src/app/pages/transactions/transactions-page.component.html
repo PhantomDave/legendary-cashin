@@ -38,7 +38,7 @@
           <ng-template #content>
             <div class="inline-edit-cell">
               <p-datepicker
-                [(ngModel)]="editingValues()[item.id].date"
+                [(ngModel)]="getEditingValue(item.id).date"
                 [appendTo]="'body'"
                 [showTime]="true"
                 ariaLabel="Transaction date"
@@ -74,7 +74,7 @@
           <ng-template #content>
             <div class="inline-edit-cell">
               <p-select
-                [(ngModel)]="editingValues()[item.id].budgetId"
+                [(ngModel)]="getEditingValue(item.id).budgetId"
                 [options]="budgets()"
                 ariaLabel="Transaction budget"
                 optionLabel="name"
@@ -112,7 +112,7 @@
           <ng-template #content>
             <div class="inline-edit-cell">
               <p-multiselect
-                [(ngModel)]="editingValues()[item.id].categoryIds"
+                [(ngModel)]="getEditingValue(item.id).categoryIds"
                 [options]="categoryOptions()"
                 ariaLabel="Transaction categories"
                 optionLabel="label"
@@ -150,7 +150,7 @@
           <ng-template #content>
             <div class="inline-edit-cell">
               <input
-                [(ngModel)]="editingValues()[item.id].description"
+                [(ngModel)]="getEditingValue(item.id).description"
                 aria-label="Transaction description"
                 pInputText
                 size="small"
@@ -187,7 +187,7 @@
           <ng-template #content>
             <div class="inline-edit-cell">
               <p-inputnumber
-                [(ngModel)]="editingValues()[item.id].amount"
+                [(ngModel)]="getEditingValue(item.id).amount"
                 [maxFractionDigits]="2"
                 [minFractionDigits]="2"
                 ariaLabel="Transaction amount"

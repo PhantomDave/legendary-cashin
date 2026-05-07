@@ -46,11 +46,12 @@
         "[csharp]": {
           "editor.defaultFormatter": "ms-dotnettools.csharp"
         },
-        "dotnet.defaultSolution": "backend/CashinService.slnx",
+        "dotnet.defaultSolution": "backend/WhereIsMyMoney.slnx",
         "terminal.integrated.defaultProfile.linux": "bash"
       }
     },
     "jetbrains": {
+      "products": ["Rider", "WebStorm"],
       "plugins": [
         "com.github.copilot",
         "com.intellij.database",

@@ -112,6 +112,10 @@ export class TransactionsPageComponent {
     });
   }
 
+  getEditingValue(id: number): EditValues {
+    return this.editingValues()[id]!;
+  }
+
   private async loadTransactions(budgetId: number): Promise<void> {
     const requestId = ++this.latestLoadRequestId;
     const response = await this.transactionService.getByBudgetId(
