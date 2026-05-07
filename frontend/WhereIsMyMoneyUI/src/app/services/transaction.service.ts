@@ -3,6 +3,7 @@ import { Transaction } from '../models/transaction/Transaction';
 import { TransactionMetrics } from '../models/transaction/TransactionMetrics';
 import { ApiService } from './api.service';
 import { PaginatedResponse } from '../models/api/paginated-response.model';
+import { RecurringTransactions } from '../models/transaction/ScheduledTransaction';
 
 export interface CreateTransactionRequest {
   description: string;
@@ -20,6 +21,20 @@ export interface PatchTransactionRequest {
   categoryIds?: number[];
 }
 
+export interface PatchScheduledTransactionRequest {
+  description?: string;
+  amount?: number;
+  categoryIds?: number[];
+  frequency?: number;
+  interval?: number;
+  startDate?: Date;
+  endDate?: Date | null;
+  maxOccurrences?: number | null;
+  daysOfWeek?: number[];
+  dayOfMonth?: number | null;
+  isActive?: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -27,6 +42,7 @@ export class TransactionService {
   readonly isLoading = signal(false);
   readonly error = signal<string | null>(null);
   readonly transactions = signal<Transaction[]>([]);
+  readonly scheduledTransactions = signal<RecurringTransactions[]>([]);
   readonly metrics = signal<TransactionMetrics | null>(null);
 
   private readonly api = inject(ApiService);
@@ -148,7 +164,109 @@ export class TransactionService {
     }
   }
 
+  async getScheduledTransactions(): Promise<RecurringTransactions[]> {
+    this.isLoading.set(true);
+    this.error.set(null);
+    try {
+      const scheduled = await this.api.get<RecurringTransactions[]>(`${this.baseApiUrl}recurring`);
+      this.scheduledTransactions.set(scheduled);
+      return scheduled;
+    } catch {
+      this.error.set('Failed to load scheduled transactions.');
+      return [];
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  async getScheduledTransactionsByBudgetId(
+    budgetId: number,
+    pageNumber: number = 1,
+    pageSize: number = this.defaultPageSize,
+  ): Promise<PaginatedResponse<RecurringTransactions> | null> {
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    try {
+      const response = await this.api.get<PaginatedResponse<RecurringTransactions>>(
+        `${this.baseApiUrl}recurring/budget/${budgetId}`,
+        {
+          params: {
+            pageNumber,
+            pageSize,
+          },
+        },
+      );
+
+      this.scheduledTransactions.set(response.items);
+      return response;
+    } catch (error) {
+      this.error.set('Failed to load scheduled transactions for the selected budget.');
+      return null;
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  async deleteScheduledTransaction(id: number): Promise<void> {
+    this.isLoading.set(true);
+    this.error.set(null);
+    try {
+      await this.api.delete(`${this.baseApiUrl}recurring/${id}`);
+      this.scheduledTransactions.update((current) => current.filter((t) => t.id !== id));
+    } catch {
+      this.error.set('Failed to delete scheduled transaction.');
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  async createScheduledTransaction(
+    transaction: RecurringTransactions,
+  ): Promise<RecurringTransactions | null> {
+    this.isLoading.set(true);
+    this.error.set(null);
+    try {
+      const createdTransaction = await this.api.post<RecurringTransactions>(
+        `${this.baseApiUrl}recurring`,
+        transaction,
+      );
+      this.scheduledTransactions.update((current) => [...current, createdTransaction]);
+      return createdTransaction;
+    } catch {
+      this.error.set('Failed to create scheduled transaction.');
+      return null;
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  async patchScheduledTransaction(
+    id: number,
+    patch: PatchScheduledTransactionRequest,
+  ): Promise<RecurringTransactions | null> {
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    try {
+      const updated = await this.api.patch<RecurringTransactions>(
+        `${this.baseApiUrl}recurring/${id}`,
+        patch,
+      );
+      this.scheduledTransactions.update((current) =>
+        current.map((t) => (t.id === id ? updated : t)),
+      );
+      return updated;
+    } catch {
+      this.error.set('Failed to update scheduled transaction.');
+      return null;
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
   clearTransactions(): void {
     this.transactions.set([]);
+    this.scheduledTransactions.set([]);
   }
 }

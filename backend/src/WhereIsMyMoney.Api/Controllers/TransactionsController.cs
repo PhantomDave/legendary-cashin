@@ -152,12 +152,13 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
     [ProducesResponseType<RecurringTransactionResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<RecurringTransactionResponse>> CreateRecurringTransaction(
-        CreateRecurringTransactionRequest request,
-        RecurringTransactionStore recurringStore,
-        RecurrenceEngine engine)
+        [FromBody] CreateRecurringTransactionRequest request)
     {
         long accountId = GetAccountId();
         request.AccountId = accountId;
+
+        RecurringTransactionStore recurringStore = HttpContext.RequestServices.GetRequiredService<RecurringTransactionStore>();
+        RecurrenceEngine engine = HttpContext.RequestServices.GetRequiredService<RecurrenceEngine>();
 
         // Validate budget belongs to account
         bool budgetBelongsToAccount = await recurringStore.BudgetBelongsToAccountAsync(request.BudgetId, accountId);
@@ -182,12 +183,12 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
 
         RecurringTransactionResponse recurring = await recurringStore.CreateAsync(request);
 
-        // Preview next occurrences for client
-        List<DateTime> nextOccurrences = engine.GetAllFutureOccurrences(
+        // Preview next occurrences for client - preview only, not stored
+        List<DateTime> previewList = engine.GetAllFutureOccurrences(
             new RecurringTransaction
             {
-                Frequency = request.Frequency,
                 Description = request.Description,
+                Frequency = request.Frequency,
                 Interval = request.Interval,
                 StartDate = request.StartDate,
                 EndDate = request.EndDate,
@@ -196,7 +197,14 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
                 DayOfMonth = request.DayOfMonth,
                 LastGeneratedDate = null,
                 GeneratedCount = 0,
-                IsActive = true
+                IsActive = true,
+                Amount = request.Amount,
+                CategoryIds = request.CategoryIds,
+                AccountId = accountId,
+                BudgetId = request.BudgetId,
+                CreatedAtUtc = DateTime.UtcNow,
+                UpdatedAtUtc = DateTime.UtcNow,
+                Id = 0
             },
             3);
 
@@ -232,6 +240,32 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
     {
         long accountId = GetAccountId();
         IReadOnlyList<RecurringTransactionResponse> recurring = await recurringStore.GetAllByAccountAsync(accountId);
+
+        return Ok(recurring);
+    }
+
+    /// <summary>
+    /// Gets recurring transaction schedules for a specific budget (paginated).
+    /// </summary>
+    [HttpGet("recurring/budget/{budgetId:long}")]
+    [ProducesResponseType<PaginatedResponse<RecurringTransactionResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PaginatedResponse<RecurringTransactionResponse>>> GetRecurringTransactionsByBudget(
+        long budgetId,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 15)
+    {
+        long accountId = GetAccountId();
+        RecurringTransactionStore recurringStore = HttpContext.RequestServices.GetRequiredService<RecurringTransactionStore>();
+
+        // Validate budget belongs to account
+        bool budgetBelongsToAccount = await recurringStore.BudgetBelongsToAccountAsync(budgetId, accountId);
+        if (!budgetBelongsToAccount)
+            return BadRequest(new { message = $"Budget '{budgetId}' is invalid for this account." });
+
+        PaginationRequest request = new PaginationRequest { PageNumber = pageNumber, PageSize = pageSize };
+        PaginatedResponse<RecurringTransactionResponse> recurring =
+            await recurringStore.GetByBudgetPaginatedAsync(budgetId, accountId, request);
 
         return Ok(recurring);
     }

@@ -80,6 +80,72 @@ public class RecurrenceEngine
         return occurrences;
     }
 
+    /// <summary>
+    /// Counts how many occurrences are due on or before the provided date.
+    /// </summary>
+    public int CountElapsedOccurrences(RecurringTransaction schedule, DateTime asOfDateUtc)
+    {
+        if (asOfDateUtc.Date < schedule.StartDate.Date)
+            return 0;
+
+        DateTime upperBound = schedule.EndDate.HasValue && schedule.EndDate.Value.Date < asOfDateUtc.Date
+            ? schedule.EndDate.Value.Date
+            : asOfDateUtc.Date;
+
+        int count = 0;
+        DateTime currentDate = schedule.StartDate;
+
+        while (true)
+        {
+            DateTime nextOccurrence = GetNextOccurrenceDate(schedule, currentDate);
+
+            if (nextOccurrence.Date > upperBound)
+                break;
+
+            count++;
+            currentDate = nextOccurrence;
+
+            if (schedule.MaxOccurrences.HasValue && count >= schedule.MaxOccurrences.Value)
+                break;
+        }
+
+        return count;
+    }
+
+    /// <summary>
+    /// Returns the last occurrence on or before the provided date.
+    /// </summary>
+    public DateTime? GetLastOccurrenceOnOrBefore(RecurringTransaction schedule, DateTime asOfDateUtc)
+    {
+        if (asOfDateUtc.Date < schedule.StartDate.Date)
+            return null;
+
+        DateTime upperBound = schedule.EndDate.HasValue && schedule.EndDate.Value.Date < asOfDateUtc.Date
+            ? schedule.EndDate.Value.Date
+            : asOfDateUtc.Date;
+
+        DateTime? lastOccurrence = null;
+        int count = 0;
+        DateTime currentDate = schedule.StartDate;
+
+        while (true)
+        {
+            DateTime nextOccurrence = GetNextOccurrenceDate(schedule, currentDate);
+
+            if (nextOccurrence.Date > upperBound)
+                break;
+
+            lastOccurrence = nextOccurrence;
+            currentDate = nextOccurrence;
+            count++;
+
+            if (schedule.MaxOccurrences.HasValue && count >= schedule.MaxOccurrences.Value)
+                break;
+        }
+
+        return lastOccurrence;
+    }
+
     // Private helpers
 
     private static DateTime GetNextDaily(DateTime from, int interval)

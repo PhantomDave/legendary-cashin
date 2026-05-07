@@ -1,0 +1,113 @@
+<div class="w-full">
+  <app-section-header
+    (ctaClicked)="openCreateModal()"
+    [ctaText]="'Create New Schedule'"
+    [subtitle]="'Manage your recurring transactions and see upcoming payments.'"
+    [title]="'Scheduled Transactions'"
+  />
+
+  <div class="px-4 md:px-8 py-6">
+    @if (scheduledTransactions()) {
+      <app-paginated-table
+        (pageChange)="onPageChange($event)"
+        [items]="scheduledTransactions()?.items ?? []"
+        [loading]="isLoading()"
+        [rowsPerPageOptions]="rowsPerPageOptions"
+        [totalRecords]="scheduledTransactions()?.totalCount ?? 0"
+      >
+        <ng-template #headerTemplate>
+          <tr>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Categories</th>
+            <th>Frequency</th>
+            <th>Pattern</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Budget</th>
+            <th>Status</th>
+            <th>Remaining Debt</th>
+            <th>Actions</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #bodyTemplate let-item>
+          <tr>
+            <td>{{ item.description }}</td>
+            <td>{{ item.amount | currency:this.selectedBudget()?.defaultCurrency : 'symbol' : '1.2-2' }}</td>
+            <td>{{ resolveCategoryNames(item.categoryIds) }}</td>
+            <td>{{ resolveFrequencyDisplay(item.frequency, item.interval) }}</td>
+            <td>{{ resolveRecurrencePattern(item) }}</td>
+            <td>{{ item.startDate | date: 'MMM dd, yyyy' }}</td>
+            <td>
+              @if (item.endDate) {
+                {{ item.endDate | date: 'MMM dd, yyyy' }}
+              } @else {
+                <span class="text-surface-400">No end date</span>
+              }
+            </td>
+            <td>{{ resolveBudgetName(item.budgetId) }}</td>
+            <td>
+              @if (item.isActive) {
+                <p-tag severity="success" value="Active">
+                  <i class="pi pi-check text-xs"></i>
+                </p-tag>
+              } @else {
+                <p-tag severity="warn" value="Inactive">
+                  <i class="pi pi-check text-xs"></i>
+                </p-tag>
+              }
+            </td>
+            <td>
+              @if (calculateRemainingDebt(item) !== null) {
+                {{ calculateRemainingDebt(item) | currency:selectedBudget()?.defaultCurrency : 'symbol' : '1.2-2' }}
+              } @else {
+                <span class="text-surface-400">-</span>
+              }
+            </td>
+            <td>
+              <div class="flex gap-1">
+                <p-button
+                  (onClick)="openEditModal(item)"
+                  icon="pi pi-pencil"
+                  severity="secondary"
+                  size="small"
+                />
+                <p-button
+                  (onClick)="deleteScheduledTransaction(item)"
+                  icon="pi pi-trash"
+                  severity="danger"
+                  size="small"
+                />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </app-paginated-table>
+    } @else if (!isLoading()) {
+      <div
+        class="flex flex-col items-center justify-center py-16 text-center rounded-lg bg-surface-50 dark:bg-surface-900/50 border border-dashed border-surface-300 dark:border-surface-700"
+      >
+        <i class="pi pi-inbox text-4xl text-surface-300 dark:text-surface-600 mb-4"></i>
+        <p class="text-lg font-medium text-surface-600 dark:text-surface-300">
+          No scheduled transactions yet
+        </p>
+        <p class="text-sm text-surface-500 dark:text-surface-400 mt-1">
+          Create one to start automating your finances
+        </p>
+      </div>
+    }
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <app-create-scheduled-transaction-component
+    (scheduledTransactionCreated)="onScheduledTransactionCreated()"
+    (scheduledTransactionUpdated)="onScheduledTransactionUpdated()"
+    [(visible)]="isCreateScheduledDialogVisible"
+    [budgetId]="selectedBudget()?.id ?? 0"
+    [editingSchedule]="editingSchedule()"
+  />
+
+  <!-- Confirm Dialog -->
+  <p-confirmDialog></p-confirmDialog>
+</div>

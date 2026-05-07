@@ -7,6 +7,7 @@ import { TransactionsPageComponent } from './pages/transactions/transactions-pag
 import { LoginPageComponent } from './pages/account/login-page-component/login-page-component';
 import { RegisterPageComponent } from './pages/account/register-page-component/register-page-component';
 import { NotFoundPageComponent } from './pages/not-found/not-found-page.component';
+import { ScheduledPageComponent } from './pages/scheduled/scheduled-page-component';
 
 export const routes: Routes = [
   {
@@ -25,7 +26,16 @@ export const routes: Routes = [
       },
       {
         path: 'transactions',
-        component: TransactionsPageComponent,
+        children: [
+          {
+            path: 'list',
+            component: TransactionsPageComponent,
+          },
+          {
+            path: 'schedules',
+            component: ScheduledPageComponent,
+          },
+        ],
       },
       {
         path: 'categories',

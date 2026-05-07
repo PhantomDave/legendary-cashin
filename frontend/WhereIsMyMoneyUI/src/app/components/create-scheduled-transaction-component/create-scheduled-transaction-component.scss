@@ -1,0 +1,46 @@
+// Modal styling for create-scheduled-transaction-component
+
+:host {
+  ::ng-deep {
+    .p-dialog {
+      .p-dialog-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .p-dialog-content {
+        padding: 1.5rem;
+      }
+    }
+
+    .p-inputgroup {
+      width: 100%;
+    }
+
+    .p-inputgroup .p-inputtext,
+    .p-inputgroup .p-select,
+    .p-inputgroup .p-multiselect,
+    .p-inputgroup .p-datepicker {
+      width: 100%;
+    }
+
+
+    p-checkbox {
+      .p-checkbox-box {
+        border-color: var(--surface-border);
+
+        &.p-highlight {
+          background-color: var(--primary-color);
+          border-color: var(--primary-color);
+        }
+      }
+    }
+
+    p-button[type='submit'] {
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+}

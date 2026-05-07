@@ -1,0 +1,130 @@
+// Scheduled transactions page styling
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.scheduled-transactions-container {
+  min-height: calc(100vh - 120px);
+  background-color: var(--surface-50);
+
+  dark & {
+    background-color: var(--surface-950);
+  }
+}
+
+// Table row hover effects
+tbody tr {
+  transition: background-color 0.2s ease-in-out;
+
+  &:hover {
+    background-color: var(--surface-50);
+
+    dark & {
+      background-color: var(--surface-800/50);
+    }
+  }
+}
+
+// Action button styling
+.action-button {
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// Empty state styling
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+
+  .empty-icon {
+    font-size: 3rem;
+    color: var(--surface-300);
+    margin-bottom: 1rem;
+
+    dark & {
+      color: var(--surface-600);
+    }
+  }
+
+  .empty-title {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--surface-600);
+    margin-bottom: 0;
+
+    dark & {
+      color: var(--surface-300);
+    }
+  }
+
+  .empty-subtitle {
+    font-size: 0.875rem;
+    color: var(--surface-500);
+    margin-top: 0.25rem;
+
+    dark & {
+      color: var(--surface-400);
+    }
+  }
+}
+
+// Status badge styling
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &.active {
+    background-color: rgb(220 252 231);
+    color: rgb(22 163 74);
+
+    dark & {
+      background-color: rgb(5 46 22 / 0.3);
+      color: rgb(134 239 172);
+    }
+  }
+
+  &.inactive {
+    background-color: var(--surface-200);
+    color: var(--surface-600);
+
+    dark & {
+      background-color: var(--surface-700);
+      color: var(--surface-300);
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  :host {
+    ::ng-deep {
+      .p-datatable {
+        font-size: 0.875rem;
+
+        .p-datatable-thead > tr > th,
+        .p-datatable-tbody > tr > td {
+          padding: 0.75rem 0.5rem;
+        }
+      }
+
+      .action-button {
+        padding: 0.5rem !important;
+      }
+    }
+  }
+}

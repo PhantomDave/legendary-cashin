@@ -18,6 +18,7 @@ import { CreateBudgetComponent } from '../create-budget-component/create-budget-
 import { PanelMenuModule } from 'primeng/panelmenu';
 import { AvatarModule } from 'primeng/avatar';
 import { AccountService } from '../../services/account.service';
+import { routes } from '../../app.routes';
 
 @Component({
   selector: 'app-shell',
@@ -49,6 +50,7 @@ export class ShellComponent implements OnInit {
   private readonly accountService = inject(AccountService);
 
   async ngOnInit(): Promise<void> {
+    console.log('route data', routes);
     this.syncThemeState();
     await this.resolveDisplayName();
 

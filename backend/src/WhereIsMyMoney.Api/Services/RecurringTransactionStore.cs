@@ -5,7 +5,7 @@ using WhereIsMyMoney.Api.Models.TransactionModels;
 
 namespace WhereIsMyMoney.Api.Services;
 
-public sealed class RecurringTransactionStore(AppDbContext db)
+public sealed class RecurringTransactionStore(AppDbContext db, RecurrenceEngine recurrenceEngine)
 {
     public async Task<RecurringTransactionResponse?> GetByIdAndAccountAsync(long id, long accountId)
     {
@@ -33,6 +33,32 @@ public sealed class RecurringTransactionStore(AppDbContext db)
             .ToListAsync();
     }
 
+    public async Task<PaginatedResponse<RecurringTransactionResponse>> GetByBudgetPaginatedAsync(
+        long budgetId,
+        long accountId,
+        PaginationRequest request)
+    {
+        IQueryable<RecurringTransaction> query = db.RecurringTransactions
+            .Where(t => t.BudgetId == budgetId && t.AccountId == accountId);
+
+        int totalCount = await query.CountAsync();
+        int totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
+
+        List<RecurringTransactionResponse> items = await query
+            .OrderByDescending(t => t.CreatedAtUtc)
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .Select(t => ToResponse(t))
+            .ToListAsync();
+
+        return new PaginatedResponse<RecurringTransactionResponse>(
+            items,
+            request.PageNumber,
+            request.PageSize,
+            totalCount,
+            totalPages);
+    }
+
     public async Task<RecurringTransactionResponse> CreateAsync(CreateRecurringTransactionRequest request)
     {
         DateTime now = DateTime.UtcNow;
@@ -54,6 +80,23 @@ public sealed class RecurringTransactionStore(AppDbContext db)
             CreatedAtUtc = now,
             UpdatedAtUtc = now
         };
+
+        // Normalise incoming dates to UTC kind so PostgreSQL timestamptz is happy.
+        entity.StartDate = DateTime.SpecifyKind(entity.StartDate, DateTimeKind.Utc);
+        if (entity.EndDate.HasValue)
+            entity.EndDate = DateTime.SpecifyKind(entity.EndDate.Value, DateTimeKind.Utc);
+
+        // If the schedule starts in the past, backfill progress so remaining debt stays coherent.
+        int elapsedOccurrences = recurrenceEngine.CountElapsedOccurrences(entity, now);
+        entity.GeneratedCount = elapsedOccurrences;
+
+        DateTime? lastOccurrence = recurrenceEngine.GetLastOccurrenceOnOrBefore(entity, now);
+        entity.LastGeneratedDate = lastOccurrence.HasValue
+            ? DateTime.SpecifyKind(lastOccurrence.Value, DateTimeKind.Utc)
+            : null;
+
+        if (entity.MaxOccurrences.HasValue && entity.GeneratedCount >= entity.MaxOccurrences.Value)
+            entity.IsActive = false;
 
         db.RecurringTransactions.Add(entity);
         await db.SaveChangesAsync();

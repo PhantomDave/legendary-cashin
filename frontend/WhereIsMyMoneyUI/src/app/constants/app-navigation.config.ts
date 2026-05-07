@@ -21,7 +21,12 @@ export const APP_NAVIGATION_ITEMS: AppNavigationItem[] = [
       {
         label: 'Transactions',
         icon: 'pi pi-list',
-        routerLink: '/transactions',
+        routerLink: '/transactions/list',
+      },
+      {
+        label: 'Schedules',
+        icon: 'pi pi-calendar',
+        routerLink: '/transactions/schedules',
       },
     ],
   },

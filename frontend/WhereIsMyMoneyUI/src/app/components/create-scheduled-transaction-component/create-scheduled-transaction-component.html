@@ -1,0 +1,228 @@
+<div class="min-h-dvh flex items-center justify-center bg-surface-50 dark:bg-surface-950 p-4">
+
+  <p-dialog
+    [(visible)]="visible"
+    [closable]="true"
+    [dismissableMask]="true"
+    [draggable]="false"
+    [modal]="true"
+    [resizable]="false"
+    styleClass="w-[92vw] sm:w-[40rem] md:w-[44rem] rounded-2xl shadow-2xl"
+  >
+    <ng-template pTemplate="header">
+      <div class="w-full text-center">
+        <h2 class="text-2xl font-semibold m-0">{{ dialogTitle() }}</h2>
+        <p class="text-sm text-surface-500 m-0 mt-1">
+          @if (isEditMode()) {
+            Update your recurring transaction schedule
+          } @else {
+            Set up a recurring transaction to automate your finances
+          }
+        </p>
+      </div>
+    </ng-template>
+
+    <form
+      (ngSubmit)="onSubmit()"
+      [formGroup]="scheduledTransactionForm"
+      class="flex flex-col gap-3"
+    >
+      <!-- Description -->
+      <p-inputgroup>
+        <p-inputgroup-addon><i class="pi pi-tag"></i></p-inputgroup-addon>
+        <input formControlName="description" pInputText
+               placeholder="Description (e.g. Monthly Subscription)"
+        />
+      </p-inputgroup>
+      @if (isInvalid('description')) {
+        <small class="text-red-500">Description is required (minimum 3 characters).</small>
+      }
+
+      <!-- Amount + Frequency -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <p-inputgroup>
+            <p-inputgroup-addon><i class="pi pi-calculator"></i></p-inputgroup-addon>
+            <p-inputnumber
+              [currency]="selectedBudget()?.defaultCurrency ?? 'USD'"
+              class="flex-1"
+              formControlName="amount"
+              locale="en-US"
+              mode="currency"
+            ></p-inputnumber>
+          </p-inputgroup>
+          @if (isInvalid('amount')) {
+            <small class="text-red-500">Amount must be greater than 0.</small>
+          }
+        </div>
+        <div>
+          <p-inputgroup>
+            <p-inputgroup-addon><i class="pi pi-refresh"></i></p-inputgroup-addon>
+            <p-select
+              [options]="frequencyOptions"
+              class="flex-1"
+              formControlName="frequency"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Frequency"
+            ></p-select>
+          </p-inputgroup>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <p-inputgroup>
+        <p-inputgroup-addon><i class="pi pi-tags"></i></p-inputgroup-addon>
+        <p-multiselect
+          [appendTo]="'body'"
+          [maxSelectedLabels]="3"
+          [options]="categoryOptions()"
+          [showToggleAll]="false"
+          class="flex-1"
+          formControlName="categoryIds"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Categories (optional)"
+          showClear
+        ></p-multiselect>
+      </p-inputgroup>
+
+      <!-- Interval + Days of Week / Day of Month (frequency-dependent) -->
+      @if (showInterval() || showDaysOfWeek() || showDayOfMonth()) {
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          @if (showInterval()) {
+            <p-inputgroup>
+              <p-inputgroup-addon>
+                <i
+                  [pTooltip]="intervalTooltip()"
+                  class="pi pi-hashtag cursor-help"
+                  tooltipPosition="right"
+                ></i>
+              </p-inputgroup-addon>
+              <input
+                [placeholder]="intervalLabel()"
+                formControlName="interval"
+                inputmode="numeric"
+                min="1"
+                pInputText
+                type="number"
+              />
+            </p-inputgroup>
+          }
+          @if (showDaysOfWeek()) {
+            <p-inputgroup>
+              <p-inputgroup-addon>
+                <i
+                  class="pi pi-calendar cursor-help"
+                  pTooltip="Select which days of the week this transaction should occur"
+                  tooltipPosition="right"
+                ></i>
+              </p-inputgroup-addon>
+              <p-multiselect
+                [appendTo]="'body'"
+                [options]="daysOfWeekOptions"
+                [showToggleAll]="false"
+                class="flex-1"
+                formControlName="daysOfWeek"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Days of Week"
+                showClear
+              ></p-multiselect>
+            </p-inputgroup>
+          }
+          @if (showDayOfMonth()) {
+            <p-inputgroup>
+              <p-inputgroup-addon>
+                <i
+                  class="pi pi-calendar cursor-help"
+                  pTooltip="Which day of the month (1–31) should this transaction occur"
+                  tooltipPosition="right"
+                ></i>
+              </p-inputgroup-addon>
+              <input
+                formControlName="dayOfMonth"
+                inputmode="numeric"
+                max="31"
+                min="1"
+                pInputText
+                placeholder="Day of Month"
+                type="number"
+              />
+            </p-inputgroup>
+          }
+        </div>
+      }
+
+      <!-- Start Date + End Date -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <p-inputgroup>
+            <p-inputgroup-addon><i class="pi pi-calendar"></i></p-inputgroup-addon>
+            <p-datepicker
+              [appendTo]="'body'"
+              [autoZIndex]="true"
+              [baseZIndex]="13000"
+              dateFormat="mm/dd/yy"
+              formControlName="startDate"
+              placeholder="Start Date"
+              showClear
+            ></p-datepicker>
+          </p-inputgroup>
+          @if (isInvalid('startDate')) {
+            <small class="text-red-500">Start date is required.</small>
+          }
+        </div>
+        <div>
+          <p-inputgroup>
+            <p-inputgroup-addon><i class="pi pi-calendar-minus"></i></p-inputgroup-addon>
+            <p-datepicker
+              [appendTo]="'body'"
+              [autoZIndex]="true"
+              [baseZIndex]="13000"
+              dateFormat="mm/dd/yy"
+              formControlName="endDate"
+              placeholder="End Date (optional)"
+              showClear
+            ></p-datepicker>
+          </p-inputgroup>
+        </div>
+      </div>
+
+      <!-- Max Occurrences — hidden when an end date is already set -->
+      @if (showMaxOccurrences()) {
+        <p-inputgroup>
+          <p-inputgroup-addon>
+            <i
+              class="pi pi-list-check cursor-help"
+              pTooltip="How many times should this transaction repeat. Set an End Date above instead if you prefer a date limit."
+              tooltipPosition="right"
+            ></i>
+          </p-inputgroup-addon>
+          <input
+            formControlName="maxOccurrences"
+            inputmode="numeric"
+            min="1"
+            pInputText
+            placeholder="Max Occurrences (optional, unlimited by default)"
+            type="number"
+          />
+        </p-inputgroup>
+      }
+
+      <!-- Active toggle + Submit -->
+      <div class="flex items-center justify-between gap-3 pt-1">
+        <div class="flex items-center gap-2">
+          <p-checkbox [binary]="true" formControlName="isActive" inputId="isActive"/>
+          <label class="text-sm font-medium cursor-pointer" for="isActive">Active</label>
+        </div>
+        <p-button
+          [disabled]="scheduledTransactionForm.invalid"
+          [icon]="isEditMode() ? 'pi pi-save' : 'pi pi-plus'"
+          [label]="buttonLabel()"
+          type="submit"
+        />
+      </div>
+    </form>
+  </p-dialog>
+</div>
