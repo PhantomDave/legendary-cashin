@@ -77,7 +77,7 @@ export class MonthlyTrendChartComponent {
 }
 
 function formatMonth(year: number, month: number): string {
-  return new Date(year, month - 1, 1).toLocaleDateString(undefined, {
+  return new Date(year, month - 1, 1).toLocaleDateString('en-US', {
     month: 'short',
     year: '2-digit',
   });

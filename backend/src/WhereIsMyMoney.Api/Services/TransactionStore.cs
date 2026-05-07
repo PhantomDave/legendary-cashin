@@ -288,9 +288,10 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
 
     public async Task<IReadOnlyList<MonthlySummaryResponse>> GetMonthlySummaryAsync(long accountId, long budgetId)
     {
+        const int monthsToInclude = 6; // Dashboard charts display a rolling 6-month trend window.
         DateTime now = DateTime.UtcNow;
         DateTime currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        DateTime firstMonthStart = currentMonthStart.AddMonths(-5);
+        DateTime firstMonthStart = currentMonthStart.AddMonths(-(monthsToInclude - 1));
         DateTime endExclusive = currentMonthStart.AddMonths(1);
 
         List<MonthlySummaryResponse> aggregates = await db.Transactions
@@ -310,7 +311,7 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
         Dictionary<(int Year, int Month), MonthlySummaryResponse> lookup = aggregates.ToDictionary(
             m => (m.Year, m.Month));
 
-        return Enumerable.Range(0, 6)
+        return Enumerable.Range(0, monthsToInclude)
             .Select(offset =>
             {
                 DateTime monthStart = firstMonthStart.AddMonths(offset);
