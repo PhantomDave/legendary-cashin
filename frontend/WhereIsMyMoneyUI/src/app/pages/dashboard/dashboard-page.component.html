@@ -3,7 +3,7 @@
   subtitle="Start with small feature pages and shared widgets; scale by domain."
 />
 
-<section class="dashboard-grid" aria-label="Dashboard overview">
+<section class="metrics-grid" aria-label="Dashboard overview metrics">
   @for (metric of metrics(); track metric.label) {
     <p-card>
       <ng-template pTemplate="header">
@@ -21,36 +21,29 @@
       </p>
     </p-card>
   }
+</section>
 
-  <p-card header="Budget Status">
-    <table>
-      <thead>
-        <tr>
-          <th>Category</th>
-          <th>Allocated</th>
-          <th>Spent</th>
-          <th>Remaining</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (item of categories(); track item.id) {
-          <tr>
-            <td>{{ item.name }}</td>
-            <td class="amount-cell">
-              {{ item.budget | currency: selectedBudget()?.defaultCurrency }}
-            </td>
-            <td class="amount-cell">
-              {{ getCategorySpent(item.id) | currency: selectedBudget()?.defaultCurrency }}
-            </td>
-            <td class="amount-cell">
-              {{
-                item.budget - getCategorySpent(item.id)
-                  | currency: selectedBudget()?.defaultCurrency
-              }}
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+<section class="charts-grid" aria-label="Dashboard charts">
+  <p-card>
+    <app-category-spending-chart
+      [transactions]="monthTransactions()"
+      [categories]="categories()"
+      [loading]="isChartLoading()"
+    />
+  </p-card>
+
+  <p-card>
+    <app-budget-utilization-chart
+      [categories]="categories()"
+      [transactions]="monthTransactions()"
+      [loading]="isChartLoading()"
+    />
+  </p-card>
+
+  <p-card class="charts-grid__wide">
+    <app-monthly-trend-chart
+      [monthlySummary]="monthlySummary()"
+      [loading]="isChartLoading()"
+    />
   </p-card>
 </section>

@@ -1,0 +1,18 @@
+<section class="widget">
+  <h3>Category Spending</h3>
+
+  @if (loading()) {
+    <p-skeleton height="18rem" />
+  } @else if (!hasData()) {
+    <p-message severity="info" text="No category spending data for this month." />
+  } @else {
+    <div class="chart-container">
+      <p-chart
+        type="doughnut"
+        [data]="chartData()"
+        [options]="chartOptions()"
+        [attr.aria-label]="'Category spending doughnut chart'"
+      />
+    </div>
+  }
+</section>
