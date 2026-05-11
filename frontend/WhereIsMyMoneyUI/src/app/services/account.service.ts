@@ -1,4 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { Account, AuthResponse } from '../models/auth/Account';
 import { Router } from '@angular/router';
@@ -25,7 +26,7 @@ export class AccountService {
       });
       this.user.set(user!);
     } catch (e) {
-      this.error.set((e as Error).message);
+      this.error.set(this.extractErrorMessage(e));
     } finally {
       this.isLoading.set(false);
     }
@@ -43,10 +44,29 @@ export class AccountService {
       await cookieStore.set('authToken', user!.token);
       await this.router.navigate(['/dashboard']);
     } catch (e) {
-      this.error.set((e as Error).message);
+      const errorMsg = this.extractErrorMessage(e);
+      this.error.set(errorMsg);
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  private extractErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      // Try to get the message from the API response body
+      if (error.error && typeof error.error === 'object' && 'message' in error.error) {
+        return String((error.error as Record<string, unknown>)['message']);
+      }
+      // Fall back to HTTP status text
+      return error.statusText || `HTTP Error ${error.status}`;
+    }
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === 'object' && error !== null && 'message' in error) {
+      return String((error as Record<string, unknown>)['message']);
+    }
+    return 'An unexpected error occurred';
   }
 
   logout() {

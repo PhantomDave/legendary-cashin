@@ -7,18 +7,17 @@ import {
   OnInit,
   signal,
 } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { APP_NAVIGATION_ITEMS } from '../../constants/app-navigation.config';
-import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterOutlet } from '@angular/router';
+import { AvatarModule } from 'primeng/avatar';
+import { ButtonModule } from 'primeng/button';
+import { PanelMenuModule } from 'primeng/panelmenu';
+import { SelectModule } from 'primeng/select';
+import { APP_NAVIGATION_ITEMS } from '../../constants/app-navigation.config';
 import { Budget } from '../../models/budget/Budget';
+import { AccountService } from '../../services/account.service';
 import { BudgetService } from '../../services/budget.service';
 import { CreateBudgetComponent } from '../create-budget-component/create-budget-component';
-import { PanelMenuModule } from 'primeng/panelmenu';
-import { AvatarModule } from 'primeng/avatar';
-import { AccountService } from '../../services/account.service';
-import { routes } from '../../app.routes';
 
 @Component({
   selector: 'app-shell',
@@ -50,7 +49,6 @@ export class ShellComponent implements OnInit {
   private readonly accountService = inject(AccountService);
 
   async ngOnInit(): Promise<void> {
-    console.log('route data', routes);
     this.syncThemeState();
     await this.resolveDisplayName();
 

@@ -9,12 +9,13 @@
 - `backend/src/WhereIsMyMoney.Api`: ASP.NET Core API (`net10.0`) with EF Core + PostgreSQL + JWT auth.
 - `backend/src/WhereIsMyMoney.Import`: CLI/web hybrid import tool for Enable Banking (external API + browser callback flow).
 - `frontend/WhereIsMyMoneyUI`: Angular 21 + PrimeNG SPA using Bun.
-- `docker-compose.yml`: local Postgres (`cashin/cashin`) used by API default connection string.
+- `docker-compose.yml`: local Postgres (`cashin/cashin_dev_password`) used by API default connection string.
 
 ## Critical runtime flow
 - API startup (`backend/src/WhereIsMyMoney.Api/Program.cs`) runs `db.Database.MigrateAsync()` automatically; schema is migration-driven.
 - All API controllers are globally protected via `app.MapControllers().RequireAuthorization()`.
 - Public endpoints must be explicitly marked `[AllowAnonymous]` (currently account registration + authentication).
+- Recurring schedules are auto-materialized by hosted service `ScheduledTransactionProcessor`; recurring APIs are under `transactions/recurring*` in `TransactionsController`.
 - Frontend auth token is `authToken` in cookies; requests gain `Authorization: Bearer ...` via `auth.interceptor.ts`.
 - Frontend API base URL is `http://localhost:5080` in `frontend/WhereIsMyMoneyUI/src/environments/environment.ts`.
 
@@ -22,6 +23,7 @@
 - Controllers are thin; business/data logic lives in stores (`Services/*Store.cs`) using `AppDbContext`.
 - Account scoping comes from JWT claim in `ApiControllerBase.GetAccountId()` (`NameIdentifier` or `sub`).
 - For account-owned resources, controller sets/validates `AccountId` before store calls (see `BudgetsController`, `TransactionsController`, `CategoriesController`).
+- Recurring transaction logic uses `RecurringTransactionStore` + `RecurrenceEngine`; follow the same account/budget/category ownership checks used in `TransactionsController` before store calls.
 - Response DTO projection is done with `ToResponse(...)` helpers inside stores.
 - Monetary fields use `decimal(18,2)` in `AppDbContext` model configuration.
 
@@ -38,6 +40,8 @@
   - `dotnet run --project backend/src/WhereIsMyMoney.Api/WhereIsMyMoney.Api.csproj`
 - Build backend solution:
   - `dotnet build backend/WhereIsMyMoney.slnx`
+- Run import tool:
+  - `dotnet run --project backend/src/WhereIsMyMoney.Import/WhereIsMyMoney.Import.csproj`
 - Run frontend:
   - `cd frontend/WhereIsMyMoneyUI && bun install && bun run start`
 - Frontend checks:
