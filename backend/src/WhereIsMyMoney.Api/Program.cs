@@ -14,7 +14,9 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDataProtection();
 builder.Services.AddScoped<AccountStore>();
+builder.Services.AddScoped<EncryptionService>();
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<BudgetStore>();
 builder.Services.AddScoped<TransactionStore>();

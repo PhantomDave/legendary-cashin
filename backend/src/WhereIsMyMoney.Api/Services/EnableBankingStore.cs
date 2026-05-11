@@ -7,31 +7,52 @@ using WhereIsMyMoney.Api.Models.EnableBankingModels;
 
 namespace WhereIsMyMoney.Api.Services;
 
-public sealed class EnableBankingStore(AppDbContext db) : IStore<EnableBanking, CreateEnableBankingRequest, EnableBanking>
+public sealed class EnableBankingStore(AppDbContext db, EncryptionService encryptionService) : IStore<EnableBanking, CreateEnableBankingRequest, EnableBanking>
 {
     public async Task<EnableBanking?> GetAsync(long id)
     {
-        return await db.EnableBanking.FirstOrDefaultAsync(e => e.Id == id);
+        EnableBanking? entity = await db.EnableBanking.FirstOrDefaultAsync(e => e.Id == id);
+        if (entity is not null)
+        {
+            DecryptEntity(entity);
+        }
+        return entity;
     }
 
     public async Task<IReadOnlyList<EnableBanking>> GetAllAsync()
     {
-        return await db.EnableBanking.ToListAsync();
+        IReadOnlyList<EnableBanking> entities = await db.EnableBanking.ToListAsync();
+        foreach (EnableBanking entity in entities)
+        {
+            DecryptEntity(entity);
+        }
+        return entities;
     }
 
     public async Task<IReadOnlyList<EnableBanking>> GetAllByAccountId(long accountId)
     {
-        return await db.EnableBanking
+        IReadOnlyList<EnableBanking> entities = await db.EnableBanking
             .Where(e => e.AccountId == accountId)
             .ToListAsync();
+        foreach (EnableBanking entity in entities)
+        {
+            DecryptEntity(entity);
+        }
+        return entities;
     }
 
     public async Task<PaginatedResponse<EnableBanking>> GetAllByAccountIdPaginatedAsync(long accountId, PaginationRequest request)
     {
-        return await db.EnableBanking
+        PaginatedResponse<EnableBanking> response = await db.EnableBanking
             .Where(e => e.AccountId == accountId)
             .OrderByDescending(e => e.CreatedAtUtc)
             .ToPaginatedResponseAsync(request);
+
+        foreach (EnableBanking entity in response.Items)
+        {
+            DecryptEntity(entity);
+        }
+        return response;
     }
 
     public async Task<EnableBanking> CreateAsync(CreateEnableBankingRequest value)
@@ -51,8 +72,20 @@ public sealed class EnableBankingStore(AppDbContext db) : IStore<EnableBanking, 
     // Store an EnableBankingIntegration configuration
     public async Task<EnableBankingIntegration> CreateIntegrationAsync(EnableBankingIntegration integration)
     {
+        // Encrypt the certificate before storing
+        if (!string.IsNullOrEmpty(integration.Certificate))
+        {
+            integration.Certificate = encryptionService.Encrypt(integration.Certificate);
+        }
+
         db.EnableBanking.Add(integration);
         await db.SaveChangesAsync();
+
+        // Decrypt for returning to caller
+        if (!string.IsNullOrEmpty(integration.Certificate))
+        {
+            integration.Certificate = encryptionService.Decrypt(integration.Certificate);
+        }
         return integration;
     }
 
@@ -76,5 +109,21 @@ public sealed class EnableBankingStore(AppDbContext db) : IStore<EnableBanking, 
         db.EnableBanking.Remove(enableBanking);
         await db.SaveChangesAsync();
         return true;
+    }
+
+    private void DecryptEntity(EnableBanking entity)
+    {
+        // Only decrypt if it's an EnableBankingIntegration with an encrypted certificate
+        if (entity is EnableBankingIntegration integration && !string.IsNullOrEmpty(integration.Certificate))
+        {
+            try
+            {
+                integration.Certificate = encryptionService.Decrypt(integration.Certificate);
+            }
+            catch
+            {
+                // If decryption fails, leave as is (might be legacy unencrypted data)
+            }
+        }
     }
 }

@@ -99,7 +99,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         modelBuilder.Entity<EnableBankingIntegration>(entity =>
         {
             entity.Property(e => e.ApplicationId).HasMaxLength(256);
-            entity.Property(e => e.Certificate).HasMaxLength(4000);
+            entity.Property(e => e.Certificate).HasMaxLength(5000);
         });
     }
 }

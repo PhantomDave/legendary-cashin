@@ -12,8 +12,8 @@ public class EnableBankingIntegration(
     string applicationId,
     string certificate) : EnableBanking
 {
-    public string ApplicationId { get; private set; } = applicationId;
-    public string Certificate { get; private set; } = certificate;
+    public string ApplicationId { get; set; } = applicationId;
+    public string Certificate { get; set; } = certificate;
     private readonly HttpClient _http = new() { BaseAddress = new Uri("https://api.enablebanking.com/") };
 
     public async Task<bool> TestAsync()
@@ -21,13 +21,10 @@ public class EnableBankingIntegration(
         try
         {
             string jwt = CreateJwt();
-            Console.WriteLine($"Generated JWT length: {jwt.Length}");
-            // Decode the JWT to inspect it
             JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
 
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
             EnableBankingApplicationResponse app = await GetApplicationAsync();
-            Console.WriteLine($"EnableBanking application: {app.Name}");
             return true;
         }
         catch (Exception ex)
@@ -54,15 +51,7 @@ public class EnableBankingIntegration(
         string normalizedCert = Certificate.Replace("\\n", "\n").Replace("\r\n", "\n").Trim();
         rsa.ImportFromPem(normalizedCert);
 
-        // Debug: Log key size to verify private key was loaded correctly
-        Console.WriteLine($"RSA Key Size (bits): {rsa.KeySize}");
         RSAParameters keyParams = rsa.ExportParameters(false); // Public parameters only
-        if (keyParams.Exponent != null && keyParams.Modulus != null)
-        {
-            Console.WriteLine($"RSA Exponent length: {keyParams.Exponent.Length} bytes");
-            Console.WriteLine($"RSA Modulus length: {keyParams.Modulus.Length} bytes");
-        }
-
         SigningCredentials signingCredentials = new SigningCredentials(
             new RsaSecurityKey(rsa),
             SecurityAlgorithms.RsaSha256)
