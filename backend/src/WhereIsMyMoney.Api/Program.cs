@@ -19,6 +19,7 @@ builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<BudgetStore>();
 builder.Services.AddScoped<TransactionStore>();
 builder.Services.AddScoped<CategoryStore>();
+builder.Services.AddScoped<EnableBankingStore>();
 
 IConfigurationSection jwtSettings = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

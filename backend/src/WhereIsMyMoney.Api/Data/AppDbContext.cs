@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WhereIsMyMoney.Api.Models.CategoryModels;
+using WhereIsMyMoney.Api.Models.EnableBankingModels;
 using WhereIsMyMoney.Api.Models.TransactionModels;
 
 namespace WhereIsMyMoney.Api.Data;
@@ -11,6 +12,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<RecurringTransaction> RecurringTransactions => Set<RecurringTransaction>();
+    public DbSet<EnableBanking> EnableBanking => Set<EnableBanking>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -82,6 +84,22 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
             entity.HasIndex(e => new { e.IsActive, e.LastGeneratedDate, e.AccountId })
                 .HasDatabaseName("idx_active_recurring_by_date");
+        });
+
+        modelBuilder.Entity<EnableBanking>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CreatedAtUtc).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Asps).HasMaxLength(1000);
+            entity.HasDiscriminator<string>("EnableBankingType")
+                .HasValue<EnableBanking>("Base")
+                .HasValue<EnableBankingIntegration>("Integration");
+        });
+
+        modelBuilder.Entity<EnableBankingIntegration>(entity =>
+        {
+            entity.Property(e => e.ApplicationId).HasMaxLength(256);
+            entity.Property(e => e.Certificate).HasMaxLength(4000);
         });
     }
 }

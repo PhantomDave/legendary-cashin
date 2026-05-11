@@ -7,6 +7,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { FileUploadHandlerEvent, FileUploadModule } from 'primeng/fileupload';
 import { ButtonModule } from 'primeng/button';
+import { ImportService } from '../../services/import.service';
 
 @Component({
   selector: 'app-enable-banking-import-component',
@@ -26,6 +27,7 @@ import { ButtonModule } from 'primeng/button';
 })
 export class EnableBankingImportComponent {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly importService = inject(ImportService);
   textAreaEnabled = false;
   readonly enableBankingForm = this.formBuilder.group({
     applicationId: ['', Validators.required],
@@ -53,12 +55,16 @@ export class EnableBankingImportComponent {
     }
   }
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     if (this.enableBankingForm.valid) {
       const formData = this.enableBankingForm.value;
-      console.log('Form submitted with data:', formData);
-    } else {
-      console.log('Form is invalid');
+      const response = await this.importService.createEnableBankingIntegration({
+        applicationId: formData.applicationId!,
+        certificate: formData.certificate!,
+      });
+      if (response) {
+        // Handle successful response, e.g., show a success message or navigate
+      }
     }
   }
 }
