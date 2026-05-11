@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using WhereIsMyMoney.Api.Data;
@@ -12,9 +13,11 @@ using WhereIsMyMoney.Api.Data;
 namespace WhereIsMyMoney.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260511144131_AddedApplicationIdToMainClass")]
+    partial class AddedApplicationIdToMainClass
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,7 +38,7 @@ namespace WhereIsMyMoney.Api.Migrations
 
                     b.HasIndex("TransactionId");
 
-                    b.ToTable("CategoryTransaction", (string)null);
+                    b.ToTable("CategoryTransaction");
                 });
 
             modelBuilder.Entity("WhereIsMyMoney.Api.Data.Account", b =>
@@ -67,7 +70,7 @@ namespace WhereIsMyMoney.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Accounts", (string)null);
+                    b.ToTable("Accounts");
                 });
 
             modelBuilder.Entity("WhereIsMyMoney.Api.Data.Budget", b =>
@@ -103,7 +106,7 @@ namespace WhereIsMyMoney.Api.Migrations
 
                     b.HasIndex("AccountId");
 
-                    b.ToTable("Budgets", (string)null);
+                    b.ToTable("Budgets");
                 });
 
             modelBuilder.Entity("WhereIsMyMoney.Api.Models.CategoryModels.Category", b =>
@@ -129,7 +132,7 @@ namespace WhereIsMyMoney.Api.Migrations
 
                     b.HasIndex("AccountId");
 
-                    b.ToTable("Categories", (string)null);
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("WhereIsMyMoney.Api.Models.EnableBankingModels.EnableBanking", b =>
@@ -164,7 +167,7 @@ namespace WhereIsMyMoney.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("EnableBanking", (string)null);
+                    b.ToTable("EnableBanking");
 
                     b.HasDiscriminator<string>("EnableBankingType").HasValue("Base");
 
@@ -246,7 +249,7 @@ namespace WhereIsMyMoney.Api.Migrations
                     b.HasIndex("IsActive", "LastGeneratedDate", "AccountId")
                         .HasDatabaseName("idx_active_recurring_by_date");
 
-                    b.ToTable("RecurringTransactions", (string)null);
+                    b.ToTable("RecurringTransactions");
                 });
 
             modelBuilder.Entity("WhereIsMyMoney.Api.Models.TransactionModels.Transaction", b =>
@@ -282,7 +285,7 @@ namespace WhereIsMyMoney.Api.Migrations
 
                     b.HasIndex("BudgetId");
 
-                    b.ToTable("Transactions", (string)null);
+                    b.ToTable("Transactions");
                 });
 
             modelBuilder.Entity("WhereIsMyMoney.Api.Models.EnableBankingModels.EnableBankingIntegration", b =>

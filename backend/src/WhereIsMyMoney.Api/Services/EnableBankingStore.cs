@@ -11,7 +11,9 @@ public sealed class EnableBankingStore(AppDbContext db, EncryptionService encryp
 {
     public async Task<EnableBanking?> GetAsync(long id)
     {
-        EnableBanking? entity = await db.EnableBanking.FirstOrDefaultAsync(e => e.Id == id);
+        EnableBanking? entity = await db.EnableBanking
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id);
         if (entity is not null)
         {
             DecryptEntity(entity);
@@ -34,10 +36,12 @@ public sealed class EnableBankingStore(AppDbContext db, EncryptionService encryp
         IReadOnlyList<EnableBanking> entities = await db.EnableBanking
             .Where(e => e.AccountId == accountId)
             .ToListAsync();
+
         foreach (EnableBanking entity in entities)
         {
             DecryptEntity(entity);
         }
+
         return entities;
     }
 

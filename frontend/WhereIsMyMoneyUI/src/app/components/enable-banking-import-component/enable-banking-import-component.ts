@@ -35,7 +35,6 @@ export class EnableBankingImportComponent {
     certificateText: [''],
     textAreaEnabled: [false],
   });
-
   onFileUpload(event: FileUploadHandlerEvent): void {
     const files = event.files;
     if (files && files.length > 0) {
