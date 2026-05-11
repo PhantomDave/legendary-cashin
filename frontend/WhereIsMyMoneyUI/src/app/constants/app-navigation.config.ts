@@ -1,6 +1,6 @@
-import { AppNavigationItem } from '../models/app-navigation.model';
+import { MenuItem } from 'primeng/api';
 
-export const APP_NAVIGATION_ITEMS: AppNavigationItem[] = [
+export const APP_NAVIGATION_ITEMS: MenuItem[] = [
   {
     label: 'Overview',
     icon: 'pi pi-home',
@@ -38,7 +38,12 @@ export const APP_NAVIGATION_ITEMS: AppNavigationItem[] = [
       {
         label: 'Categories',
         icon: 'pi pi-sliders-h',
-        routerLink: '/categories',
+        routerLink: 'configuration/categories',
+      },
+      {
+        label: 'Import',
+        icon: 'pi pi-file-import',
+        routerLink: 'configuration/import',
       },
     ],
   },

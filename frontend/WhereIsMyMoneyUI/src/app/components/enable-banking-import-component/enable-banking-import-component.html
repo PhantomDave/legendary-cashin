@@ -1,0 +1,49 @@
+<div>
+  <form [formGroup]="enableBankingForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-3">
+    <div>
+      <p-inputgroup>
+        <p-inputgroup-addon><i class="pi pi-wallet"></i></p-inputgroup-addon>
+        <input formControlName="applicationId" pInputText placeholder="Application ID" />
+      </p-inputgroup>
+    </div>
+    <div>
+      <label for="textAreaEnabled" class="mr-2">
+        @if (enableBankingForm.get('textAreaEnabled')?.value) {
+        <span>Certificate Text Input</span>
+        } @else {
+        <span>Certificate Text Upload</span>
+        }
+      </label>
+      <p-toggleswitch formControlName="textAreaEnabled"></p-toggleswitch>
+    </div>
+    <div class="flex flex-col gap-2">
+      @if (!enableBankingForm.get('textAreaEnabled')?.value) {
+      <p-fileupload
+        name="certificateFile"
+        [customUpload]="true"
+        accept=".pem,.key,.txt"
+        [showUploadButton]="false"
+        [showCancelButton]="false"
+        chooseLabel="Choose Certificate"
+        (onSelect)="onFileUpload($event)"
+        class="align-middle"
+      ></p-fileupload>
+      } @else {
+      <p-inputgroup>
+        <p-inputgroup-addon><i class="pi pi-lock"></i></p-inputgroup-addon>
+        <textarea
+          rows="5"
+          cols="30"
+          pTextarea
+          formControlName="certificateText"
+          placeholder="-----BEGIN RSA PRIVATE KEY----- ... -----END RSA PRIVATE KEY-----"
+        >
+        </textarea>
+      </p-inputgroup>
+      }
+    </div>
+    <div>
+      <p-button type="submit" label="Enable Banking" class="w-full"></p-button>
+    </div>
+  </form>
+</div>

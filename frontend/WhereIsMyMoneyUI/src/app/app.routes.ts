@@ -8,6 +8,7 @@ import { LoginPageComponent } from './pages/account/login-page-component/login-p
 import { RegisterPageComponent } from './pages/account/register-page-component/register-page-component';
 import { NotFoundPageComponent } from './pages/not-found/not-found-page.component';
 import { ScheduledPageComponent } from './pages/scheduled/scheduled-page-component';
+import { ImportPageComponent } from './pages/import/import-page-component';
 
 export const routes: Routes = [
   {
@@ -38,8 +39,17 @@ export const routes: Routes = [
         ],
       },
       {
-        path: 'categories',
-        component: CategoriesPageComponent,
+        path: 'configuration',
+        children: [
+          {
+            path: 'categories',
+            component: CategoriesPageComponent,
+          },
+          {
+            path: 'import',
+            component: ImportPageComponent,
+          },
+        ],
       },
     ],
   },
