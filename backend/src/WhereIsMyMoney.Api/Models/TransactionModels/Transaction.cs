@@ -8,7 +8,7 @@ namespace WhereIsMyMoney.Api.Models.TransactionModels
         public required string Description { get; set; }
         public decimal Amount { get; set; }
         public DateTime Date { get; set; }
-        public List<Category> Categories { get; set; } = [];
+        public ICollection<Category> Categories { get; set; } = [];
         public long BudgetId { get; set; }
         public long AccountId { get; set; }
     }

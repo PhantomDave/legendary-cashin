@@ -11,6 +11,6 @@ namespace WhereIsMyMoney.Api.Models.TransactionModels
         public decimal Amount { get; set; }
         [Required]
         public DateTime Date { get; set; }
-        public List<int> CategoryIds { get; set; } = [];
+        public IReadOnlyList<int> CategoryIds { get; set; } = [];
     }
 }

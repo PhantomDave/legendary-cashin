@@ -1,6 +1,7 @@
 export interface EnableBanking {
   id: number;
-  accountId: number;
+  applicationId: number;
   asps: string | null;
+  configuration: string | null;
   createdAtUtc: string;
 }

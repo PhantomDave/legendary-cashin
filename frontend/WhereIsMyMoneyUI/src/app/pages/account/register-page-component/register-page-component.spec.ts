@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { RegisterPageComponent } from './register-page-component';
+import { provideTestDependencies } from '../../../../testing/test-providers';
 
 describe('RegisterPageComponent', () => {
   let component: RegisterPageComponent;
@@ -9,6 +9,7 @@ describe('RegisterPageComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [RegisterPageComponent],
+      providers: provideTestDependencies(),
     }).compileComponents();
 
     fixture = TestBed.createComponent(RegisterPageComponent);

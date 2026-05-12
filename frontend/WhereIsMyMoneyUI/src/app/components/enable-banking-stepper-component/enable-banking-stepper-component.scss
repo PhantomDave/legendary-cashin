@@ -1,0 +1,51 @@
+/* Stepper custom styles */
+:host ::ng-deep {
+  .p-stepper {
+    .p-stepper-panel {
+      border: none;
+
+      .p-stepper-header {
+        border: none;
+        background: transparent;
+        padding: 1rem 0;
+
+        &.p-highlight {
+          background: transparent;
+
+          .p-stepper-number {
+            background: var(--primary-color);
+          }
+
+          .p-stepper-title {
+            color: var(--primary-color);
+            font-weight: 600;
+          }
+        }
+
+        &:not(.p-disabled):hover {
+          background: transparent;
+
+          .p-stepper-title {
+            color: var(--primary-color);
+          }
+        }
+      }
+
+      .p-stepper-content {
+        padding: 1.5rem 0;
+        border-top: 1px solid var(--surface-border);
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .p-stepper-footer {
+        padding: 1rem 0;
+        border: none;
+        background: transparent;
+      }
+    }
+
+    .p-stepper-panels {
+      gap: 0;
+    }
+  }
+}

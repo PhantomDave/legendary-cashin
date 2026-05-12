@@ -1,0 +1,118 @@
+<p-dialog
+  [(visible)]="isOpen"
+  [closable]="true"
+  [dismissableMask]="true"
+  [draggable]="false"
+  [modal]="true"
+  [resizable]="false"
+  (onHide)="close()"
+  styleClass="w-[92vw] sm:w-[28rem] md:w-[32rem] rounded-2xl shadow-2xl"
+>
+  <div class="card flex justify-center">
+    <p-stepper [value]="1" class="basis-full">
+      <p-step-list>
+        <p-step [value]="1">Application ID</p-step>
+        <p-step [value]="2">Certificate</p-step>
+        <p-step [value]="3">Review</p-step>
+      </p-step-list>
+
+      <p-step-panels>
+        <!-- Step 1: Application ID -->
+        <p-step-panel [value]="1">
+          <ng-template #content let-activateCallback="activateCallback">
+            <app-step-application-id
+              #appStepApplicationId
+              [applicationId]="applicationId()"
+              (applicationIdChange)="onApplicationIdChange($event)"
+            ></app-step-application-id>
+
+            <div class="flex pt-6 justify-end">
+              <p-button
+                label="Next"
+                icon="pi pi-arrow-right"
+                iconPos="right"
+                [disabled]="!canProceedToStep2()"
+                (onClick)="activateCallback(2)"
+              />
+            </div>
+          </ng-template>
+        </p-step-panel>
+
+        <!-- Step 2: Certificate -->
+        <p-step-panel [value]="2">
+          <ng-template #content let-activateCallback="activateCallback">
+            <app-step-certificate
+              #appStepCertificate
+              [certificate]="certificate()"
+              [textAreaEnabled]="textAreaEnabled()"
+              (certificateChange)="onCertificateChange($event)"
+              (textAreaEnabledChange)="onTextAreaEnabledChange($event)"
+            ></app-step-certificate>
+
+            <div class="flex pt-6 justify-between">
+              <p-button
+                label="Back"
+                severity="secondary"
+                icon="pi pi-arrow-left"
+                (onClick)="activateCallback(1)"
+              />
+              <p-button
+                label="Next"
+                icon="pi pi-arrow-right"
+                iconPos="right"
+                [disabled]="!canProceedToStep3()"
+                (onClick)="activateCallback(3)"
+              />
+            </div>
+          </ng-template>
+        </p-step-panel>
+
+        <!-- Step 3: Review & Confirm -->
+        <p-step-panel [value]="3">
+          <ng-template #content let-activateCallback="activateCallback">
+            <app-step-review
+              #appStepReview
+              [applicationId]="applicationId()"
+              [certificate]="certificate()"
+            ></app-step-review>
+
+            <div class="flex pt-6 justify-between">
+              <p-button
+                label="Back"
+                severity="secondary"
+                icon="pi pi-arrow-left"
+                (onClick)="activateCallback(2)"
+              />
+              <p-button
+                label="Submit"
+                icon="pi pi-check"
+                iconPos="right"
+                [disabled]="!canSubmit() || isLoading()"
+                [loading]="isLoading()"
+                (onClick)="onSubmit()"
+              />
+            </div>
+          </ng-template>
+        </p-step-panel>
+      </p-step-panels>
+    </p-stepper>
+  </div>
+
+  <ng-template pTemplate="header">
+    <div class="w-full text-center">
+      <h2 class="text-2xl font-semibold m-0">Enable Banking Integration</h2>
+      <p class="text-sm text-surface-500 m-0 mt-1">
+        Set up your Enable Banking credentials to start importing transactions
+      </p>
+    </div>
+  </ng-template>
+
+  @if (errorMessage()) {
+  <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800 mb-4">
+    <p class="m-0">
+      <i class="pi pi-exclamation-triangle mr-2"></i>
+      {{ errorMessage() }}
+    </p>
+  </div>
+  }
+</p-dialog>

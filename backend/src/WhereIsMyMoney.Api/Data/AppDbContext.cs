@@ -13,6 +13,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<RecurringTransaction> RecurringTransactions => Set<RecurringTransaction>();
     public DbSet<EnableBanking> EnableBanking => Set<EnableBanking>();
+    public DbSet<EnableBankingBankSession> EnableBankingSessions => Set<EnableBankingBankSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -100,6 +101,22 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             entity.Property(e => e.ApplicationId).HasMaxLength(256);
             entity.Property(e => e.Certificate).HasMaxLength(5000);
+        });
+
+        modelBuilder.Entity<EnableBankingBankSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SessionId).HasMaxLength(256);
+            entity.Property(e => e.AspspName).HasMaxLength(256);
+            entity.Property(e => e.AspspCountry).HasMaxLength(2);
+            entity.Property(e => e.AccountsJson).HasColumnType("text");
+            entity.Property(e => e.CreatedAtUtc).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasOne<Account>()
+                  .WithMany()
+                  .HasForeignKey(e => e.AccountId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.AccountId);
+            entity.HasIndex(e => e.IntegrationId);
         });
     }
 }

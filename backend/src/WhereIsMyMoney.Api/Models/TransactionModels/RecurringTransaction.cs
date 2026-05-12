@@ -11,7 +11,7 @@ namespace WhereIsMyMoney.Api.Models.TransactionModels
         // Transaction template
         public required string Description { get; set; }
         public decimal Amount { get; set; }
-        public List<int> CategoryIds { get; set; } = [];
+        public IReadOnlyList<int> CategoryIds { get; set; } = [];
 
         // Recurrence pattern
         public RecurrenceFrequency Frequency { get; set; }

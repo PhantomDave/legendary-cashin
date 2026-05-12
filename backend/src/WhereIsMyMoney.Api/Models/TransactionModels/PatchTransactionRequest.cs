@@ -11,7 +11,7 @@ public sealed class PatchTransactionRequest
 
     public DateTime? Date { get; init; }
 
-    public List<int>? CategoryIds { get; init; }
+    public IReadOnlyList<int>? CategoryIds { get; init; }
 
     public long? BudgetId { get; init; }
 }

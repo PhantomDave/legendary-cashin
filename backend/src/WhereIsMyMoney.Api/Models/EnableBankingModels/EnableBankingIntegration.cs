@@ -16,15 +16,16 @@ public class EnableBankingIntegration(
     public string Certificate { get; set; } = certificate;
     private readonly HttpClient _http = new() { BaseAddress = new Uri("https://api.enablebanking.com/") };
 
-    public async Task<bool> TestAsync()
+    private EnableBankingApplicationResponse? enableBankingApplicationResponse;
+    public async Task<bool> AuthenticateAsync()
     {
         try
         {
             string jwt = CreateJwt();
-            JwtSecurityTokenHandler handler = new JwtSecurityTokenHandler();
+            JwtSecurityTokenHandler handler = new();
 
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
-            EnableBankingApplicationResponse app = await GetApplicationAsync();
+            await GetApplicationAsync();
             return true;
         }
         catch (Exception ex)
@@ -39,8 +40,9 @@ public class EnableBankingIntegration(
         HttpResponseMessage response = await _http.GetAsync("/application");
         await EnsureSuccessAsync(response);
         string json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<EnableBankingApplicationResponse>(json)
+        enableBankingApplicationResponse = JsonSerializer.Deserialize<EnableBankingApplicationResponse>(json)
             ?? throw new InvalidOperationException("Failed to deserialize EnableBanking application response.");
+        return enableBankingApplicationResponse;
     }
 
     private string CreateJwt()
@@ -81,5 +83,64 @@ public class EnableBankingIntegration(
             throw new InvalidOperationException(
                 $"Enable Banking API error {(int)response.StatusCode}: {body}");
         }
+    }
+
+    public async Task<IReadOnlyList<AspspData>> StartConfigurationAsync(string[] countries)
+    {
+        await AuthenticateAsync();
+        return await GetAspspsAsync(countries);
+    }
+
+    public async Task<IReadOnlyList<AspspData>> GetAspspsAsync(string[] countries)
+    {
+        string countryQuery = string.Join("&country=", countries);
+        HttpResponseMessage response = await _http.GetAsync($"/aspsps?country={countryQuery}");
+        await EnsureSuccessAsync(response);
+        string json = await response.Content.ReadAsStringAsync();
+        GetAspspsResponse? response_data = JsonSerializer.Deserialize<GetAspspsResponse>(json)
+            ?? throw new InvalidOperationException("Failed to deserialize EnableBanking ASPSP response.");
+        return response_data.Aspsps;
+    }
+
+    public void RedactCertificate()
+    {
+        Certificate = "[REDACTED]";
+    }
+
+    public async Task<StartBankAuthApiResponse> StartBankAuthAsync(
+        string aspspName, string aspspCountry, string redirectUrl, string state)
+    {
+        await AuthenticateAsync();
+
+        var body = new
+        {
+            access = new { valid_until = DateTime.UtcNow.AddDays(90).ToString("o") },
+            aspsp = new { name = aspspName, country = aspspCountry },
+            state,
+            redirect_url = redirectUrl,
+            psu_type = "personal"
+        };
+
+        string json = System.Text.Json.JsonSerializer.Serialize(body);
+        HttpContent content = new System.Net.Http.StringContent(json, System.Text.Encoding.UTF8, "application/json");
+        HttpResponseMessage response = await _http.PostAsync("/auth", content);
+        await EnsureSuccessAsync(response);
+        string responseJson = await response.Content.ReadAsStringAsync();
+        return System.Text.Json.JsonSerializer.Deserialize<StartBankAuthApiResponse>(responseJson)
+            ?? throw new InvalidOperationException("Failed to deserialize StartBankAuth response.");
+    }
+
+    public async Task<AuthorizeSessionApiResponse> AuthorizeSessionAsync(string code)
+    {
+        await AuthenticateAsync();
+
+        var body = new { code };
+        string json = System.Text.Json.JsonSerializer.Serialize(body);
+        HttpContent content = new System.Net.Http.StringContent(json, System.Text.Encoding.UTF8, "application/json");
+        HttpResponseMessage response = await _http.PostAsync("/sessions", content);
+        await EnsureSuccessAsync(response);
+        string responseJson = await response.Content.ReadAsStringAsync();
+        return System.Text.Json.JsonSerializer.Deserialize<AuthorizeSessionApiResponse>(responseJson)
+            ?? throw new InvalidOperationException("Failed to deserialize AuthorizeSession response.");
     }
 }
