@@ -9,6 +9,7 @@ import { RegisterPageComponent } from './pages/account/register-page-component/r
 import { NotFoundPageComponent } from './pages/not-found/not-found-page.component';
 import { ScheduledPageComponent } from './pages/scheduled/scheduled-page-component';
 import { ImportPageComponent } from './pages/import/import-page-component';
+import { ImportCallbackPageComponent } from './pages/import/callback/import-callback-page.component';
 
 export const routes: Routes = [
   {
@@ -50,6 +51,16 @@ export const routes: Routes = [
             component: ImportPageComponent,
           },
         ],
+      },
+    ],
+  },
+  {
+    path: 'import',
+    canActivate: [authGuard],
+    children: [
+      {
+        path: 'callback',
+        component: ImportCallbackPageComponent,
       },
     ],
   },

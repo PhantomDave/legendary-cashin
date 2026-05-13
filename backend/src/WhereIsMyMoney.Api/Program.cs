@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using WhereIsMyMoney.Api;
 using WhereIsMyMoney.Api.Data;
+using WhereIsMyMoney.Api.Models.EnableBankingModels;
 using WhereIsMyMoney.Api.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,8 @@ builder.Services.AddScoped<BudgetStore>();
 builder.Services.AddScoped<TransactionStore>();
 builder.Services.AddScoped<CategoryStore>();
 builder.Services.AddScoped<EnableBankingStore>();
+builder.Services.Configure<EnableBankingOptions>(builder.Configuration.GetSection("EnableBanking"));
+builder.Services.AddSingleton<EnableBankingAuthStateService>();
 
 IConfigurationSection jwtSettings = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -44,6 +47,8 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<RecurrenceEngine>();
 builder.Services.AddScoped<RecurringTransactionStore>();
 builder.Services.AddHostedService<ScheduledTransactionProcessor>();
+builder.Services.AddSingleton<EnableBankingImporter>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<EnableBankingImporter>());
 
 
 WebApplication app = builder.Build();

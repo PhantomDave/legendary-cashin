@@ -7,5 +7,5 @@ public record TransactionResponse(
     decimal Amount,
     DateTime Date,
     long BudgetId,
-    List<int> CategoryIds
+    IReadOnlyList<int> CategoryIds
 );

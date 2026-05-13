@@ -1,6 +1,10 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using WhereIsMyMoney.Api.Data;
 using WhereIsMyMoney.Api.Models;
+using WhereIsMyMoney.Api.Models.EnableBankingModels;
 using WhereIsMyMoney.Api.Models.TransactionModels;
 
 namespace WhereIsMyMoney.Api.Services;
@@ -320,6 +324,105 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
                     : new MonthlySummaryResponse(monthStart.Year, monthStart.Month, 0m, 0m);
             })
             .ToList();
+    }
+
+    /// <summary>
+    /// Inserts imported Enable Banking transactions, skipping any that already exist
+    /// (matched via <see cref="BuildExternalRef"/>).
+    /// Returns the number of rows inserted and skipped.
+    /// </summary>
+    public async Task<(int Inserted, int Skipped)> ImportFromEnableBankingAsync(
+        IReadOnlyList<ImportedTransaction> transactions,
+        long budgetId)
+    {
+        if (transactions.Count == 0)
+            return (0, 0);
+
+        // Build the dedup key for every incoming transaction up front.
+        List<(ImportedTransaction Source, string Ref)> keyed = transactions
+            .Select(t => (t, BuildExternalRef(t)))
+            .ToList();
+
+        HashSet<string> incomingRefs = keyed.Select(k => k.Ref).ToHashSet();
+        long accountId = transactions[0].OwnerAccountId;
+
+        // Single round-trip: fetch every matching ref that already lives in the DB.
+        HashSet<string> existingRefs = (await db.Transactions
+            .Where(t => t.AccountId == accountId
+                     && t.ExternalRef != null
+                     && incomingRefs.Contains(t.ExternalRef!))
+            .Select(t => t.ExternalRef!)
+            .ToListAsync())
+            .ToHashSet();
+
+        int inserted = 0;
+        int skipped = 0;
+
+        foreach ((ImportedTransaction source, string externalRef) in keyed)
+        {
+            if (existingRefs.Contains(externalRef))
+            {
+                skipped++;
+                continue;
+            }
+
+            decimal amount = decimal.Parse(source.Amount, CultureInfo.InvariantCulture);
+            // Debits are outgoing money — store as negative.
+            if (source.CreditDebitIndicator == "DBIT")
+                amount = -Math.Abs(amount);
+            else
+                amount = Math.Abs(amount);
+
+            DateTime date = DateOnly.TryParse(source.BookingDate ?? source.ValueDate, out DateOnly d)
+                ? d.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)
+                : DateTime.UtcNow;
+
+            string description = (source.Description ?? string.Empty).Trim();
+            if (description.Length == 0) description = "Enable Banking import";
+            if (description.Length > 256) description = description[..256];
+
+            db.Transactions.Add(new Transaction
+            {
+                AccountId = source.OwnerAccountId,
+                BudgetId = budgetId,
+                Description = description,
+                Amount = amount,
+                Date = date,
+                ExternalRef = externalRef,
+            });
+
+            // Track locally so within-batch dupes are also caught without a second DB trip.
+            existingRefs.Add(externalRef);
+            inserted++;
+        }
+
+        if (inserted > 0)
+            await db.SaveChangesAsync();
+
+        return (inserted, skipped);
+    }
+
+    /// <summary>
+    /// Builds a stable, unique string key for an Enable Banking transaction.
+    /// Prefers the bank-assigned ID; falls back to a SHA-256 content hash so
+    /// banks that omit IDs are still deduplicated reliably.
+    /// </summary>
+    internal static string BuildExternalRef(ImportedTransaction t)
+    {
+        if (!string.IsNullOrWhiteSpace(t.TransactionId))
+            return $"eb:{t.TransactionId}";
+
+        // Include enough fields to make accidental collisions extremely unlikely.
+        string raw = string.Join("|",
+            t.AccountUid,
+            t.BookingDate ?? t.ValueDate ?? string.Empty,
+            t.Amount,
+            t.Currency,
+            t.CreditDebitIndicator,
+            t.Description ?? string.Empty);
+
+        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(raw));
+        return $"eb-hash:{Convert.ToHexString(hash)[..16]}";
     }
 
     private async Task<decimal> SumTransactionsAsync(long accountId, long budgetId, DateTime from, DateTime to)

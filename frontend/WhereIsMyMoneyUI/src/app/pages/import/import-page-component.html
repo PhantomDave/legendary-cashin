@@ -16,28 +16,23 @@
     <p-accordion-panel value="0">
       <p-accordion-header class="flex flex-col justify-around gap-2"
         >Auto Import Via Enable Banking API
-        <p-button
-          icon="pi pi-plus"
-          label="Add"
-          (click)="showEnableBankingForm = !showEnableBankingForm"
-        ></p-button
+        <p-button icon="pi pi-plus" label="Add" (click)="openEnableBankingModal()"></p-button
       ></p-accordion-header>
-      @if (showEnableBankingForm) {
-        <p-accordion-content class="flex flex-col gap-4">
-          <p class="m-0">
-            This section will enable you to auto-import your transactions from your bank account.
-            You can connect your bank account to our platform and we will automatically import your
-            transactions on a regular basis. This will save you time and effort in manually
-            importing your transactions and will ensure that your financial data is always
-            up-to-date.
-          </p>
-          <app-enable-banking-import-component />
-        </p-accordion-content>
-      } @else {
-        <div class="flex flex-col gap-3">
-          <app-enable-banking-connections-component></app-enable-banking-connections-component>
-        </div>
-      }
+      <p-accordion-content class="flex flex-col gap-4">
+        <p class="m-0">
+          This section will enable you to auto-import your transactions from your bank account. You
+          can connect your bank account to our platform and we will automatically import your
+          transactions on a regular basis. This will save you time and effort in manually importing
+          your transactions and will ensure that your financial data is always up-to-date.
+        </p>
+        <app-enable-banking-connections-component></app-enable-banking-connections-component>
+      </p-accordion-content>
     </p-accordion-panel>
   </p-accordion>
 </div>
+
+<!-- Enable Banking Stepper Modal -->
+<app-enable-banking-stepper-component
+  [(isOpen)]="showEnableBankingForm"
+  (onSuccess)="onEnableBankingSuccess()"
+></app-enable-banking-stepper-component>
