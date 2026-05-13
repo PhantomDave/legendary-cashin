@@ -1,9 +1,9 @@
-import { inject, Injectable, signal } from '@angular/core';
-import { ApiService } from './api.service';
-import { CreateEnableBankingRequest } from '../models/import/CreateEnableBankingRequest';
-import { EnableBanking } from '../models/import/EnableBanking';
-import { AspspData } from '../models/import/AspspData';
-import { EnableBankingBankSession } from '../models/import/EnableBankingBankSession';
+import {inject, Injectable, signal} from '@angular/core';
+import {ApiService} from './api.service';
+import {CreateEnableBankingRequest} from '../models/import/CreateEnableBankingRequest';
+import {EnableBanking} from '../models/import/EnableBanking';
+import {AspspData} from '../models/import/AspspData';
+import {EnableBankingBankSession} from '../models/import/EnableBankingBankSession';
 
 @Injectable({
   providedIn: 'root',
@@ -62,21 +62,6 @@ export class ImportService {
     }
   }
 
-  async startEnableBankingConfiguration(id: number): Promise<boolean> {
-    this.isLoading.set(true);
-    this.error.set(null);
-
-    try {
-      await this.api.post(`${this.baseApiUrl}enablebanking/${id}/start-configuration`, {});
-      return true;
-    } catch (err) {
-      this.error.set('Failed to start EnableBanking configuration.');
-      return false;
-    } finally {
-      this.isLoading.set(false);
-    }
-  }
-
   async configureCountries(id: number, countries: string[]): Promise<AspspData[]> {
     this.isLoading.set(true);
     this.error.set(null);
@@ -109,8 +94,8 @@ export class ImportService {
       const response = await this.api.post<{ message: string; integrationId: number }>(
         `${this.baseApiUrl}enablebanking/${id}/configure-aspsps`,
         {
-          selectedAspsps: selectedAspsps.join(','),
-          selectedCountries: selectedCountries.join(','),
+          selectedAspsps,
+          selectedCountries,
         },
       );
       return !!response;
@@ -126,14 +111,13 @@ export class ImportService {
     integrationId: number,
     aspspName: string,
     aspspCountry: string,
-    redirectUrl: string,
   ): Promise<{ url: string; state: string } | null> {
     this.isLoading.set(true);
     this.error.set(null);
     try {
       return await this.api.post<{ url: string; state: string }>(
         `${this.baseApiUrl}enablebanking/${integrationId}/start-bank-auth`,
-        { aspspName, aspspCountry, redirectUrl },
+        { aspspName, aspspCountry },
       );
     } catch (err) {
       this.error.set('Failed to start bank authentication.');

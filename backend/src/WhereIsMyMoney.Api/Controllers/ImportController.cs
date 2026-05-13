@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using WhereIsMyMoney.Api.Models.EnableBankingModels;
 using WhereIsMyMoney.Api.Services;
 
@@ -9,7 +10,8 @@ namespace WhereIsMyMoney.Api.Controllers
     public sealed class ImportController(
         EnableBankingStore store,
         EnableBankingAuthStateService authStateService,
-        EnableBankingImporter importer) : ApiControllerBase
+        EnableBankingImporter importer,
+        IOptions<EnableBankingOptions> options) : ApiControllerBase
     {
         [HttpPost("enablebanking")]
         public async Task<IActionResult> Import([FromBody] CreateEnableBankingRequest request)
@@ -74,6 +76,11 @@ namespace WhereIsMyMoney.Api.Controllers
         [HttpPost("enablebanking/{id:long}/start-configuration")]
         public async Task<IActionResult> StartConfiguration(long id, [FromBody] StartConfigurationRequest request)
         {
+            if (request.Countries.Count == 0)
+            {
+                return BadRequest(new { error = "At least one country is required." });
+            }
+
             long accountId = GetAccountId();
 
             // Verify the config belongs to this account
@@ -93,6 +100,16 @@ namespace WhereIsMyMoney.Api.Controllers
         [HttpPost("enablebanking/{id:long}/configure-aspsps")]
         public async Task<IActionResult> ConfigureAspsps(long id, [FromBody] ConfigureAspspsRequest request)
         {
+            if (request.SelectedCountries.Count == 0)
+            {
+                return BadRequest(new { error = "At least one country is required." });
+            }
+
+            if (request.SelectedAspsps.Count == 0)
+            {
+                return BadRequest(new { error = "At least one ASPSP is required." });
+            }
+
             long accountId = GetAccountId();
 
             // Verify the integration belongs to this account
@@ -105,13 +122,14 @@ namespace WhereIsMyMoney.Api.Controllers
             // Prepare the configuration update with selected ASPSPs and countries
             var configData = new { Countries = request.SelectedCountries };
             string configurationJson = System.Text.Json.JsonSerializer.Serialize(configData);
+            string asps = string.Join(',', request.SelectedAspsps);
 
             // Store the configuration including countries and selected banks
             bool success = await store.UpdateAsync(id, new EnableBanking
             {
                 Id = id,
                 AccountId = accountId,
-                Asps = request.SelectedAspsps,
+                Asps = asps,
                 CreatedAtUtc = enableBanking.CreatedAtUtc,
                 Configuration = configurationJson
             });
@@ -127,16 +145,28 @@ namespace WhereIsMyMoney.Api.Controllers
         [HttpPost("enablebanking/{id:long}/start-bank-auth")]
         public async Task<IActionResult> StartBankAuth(long id, [FromBody] StartBankAuthRequest request)
         {
+            if (string.IsNullOrWhiteSpace(options.Value.RedirectUrl))
+            {
+                return Problem("Enable Banking redirect URL is not configured.", statusCode: 500);
+            }
+
             long accountId = GetAccountId();
             EnableBankingIntegration? enableBanking = await store.GetIntegrationById(accountId, id);
             if (enableBanking is null)
                 return NotFound();
 
             string state = authStateService.CreateState(id, accountId);
+            int maxConsentValidity = Math.Max(1, options.Value.MaxConsentValidity);
+            string psuType = string.IsNullOrWhiteSpace(options.Value.PsuType) ? "personal" : options.Value.PsuType;
             try
             {
                 StartBankAuthApiResponse result = await enableBanking.StartBankAuthAsync(
-                    request.AspspName, request.AspspCountry, request.RedirectUrl, state);
+                    request.AspspName,
+                    request.AspspCountry,
+                    options.Value.RedirectUrl,
+                    state,
+                    maxConsentValidity,
+                    psuType);
                 return Ok(new { url = result.Url, authorizationId = result.AuthorizationId, state });
             }
             catch (Exception ex)
@@ -219,8 +249,8 @@ namespace WhereIsMyMoney.Api.Controllers
         }
     }
     public record StartConfigurationRequest(IReadOnlyList<string> Countries);
-    public record ConfigureAspspsRequest(string SelectedAspsps, string SelectedCountries);
-    public record StartBankAuthRequest(string AspspName, string AspspCountry, string RedirectUrl);
+    public record ConfigureAspspsRequest(IReadOnlyList<string> SelectedAspsps, IReadOnlyList<string> SelectedCountries);
+    public record StartBankAuthRequest(string AspspName, string AspspCountry);
     public record CompleteBankAuthRequest(string Code, string State);
     public record StartBankSessionImportRequest(DateTime? From);
 }

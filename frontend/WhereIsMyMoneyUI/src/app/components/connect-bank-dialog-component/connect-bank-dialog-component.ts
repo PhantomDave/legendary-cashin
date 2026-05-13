@@ -1,18 +1,17 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Dialog } from 'primeng/dialog';
-import { Button } from 'primeng/button';
-import { TableModule } from 'primeng/table';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { TagModule } from 'primeng/tag';
-import { MultiSelectModule } from 'primeng/multiselect';
-import { ImportService } from '../../services/import.service';
-import { ToastService } from '../../services/toast.service';
-import { environment } from '../../../environments/environment';
-import { EnableBanking } from '../../models/import/EnableBanking';
-import { AspspData } from '../../models/import/AspspData';
-import { EU_COUNTRIES } from '../../constants/countries';
+import {ChangeDetectionStrategy, Component, inject, input, output, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {Dialog} from 'primeng/dialog';
+import {Button} from 'primeng/button';
+import {TableModule} from 'primeng/table';
+import {ProgressSpinnerModule} from 'primeng/progressspinner';
+import {TagModule} from 'primeng/tag';
+import {MultiSelectModule} from 'primeng/multiselect';
+import {ImportService} from '../../services/import.service';
+import {ToastService} from '../../services/toast.service';
+import {EnableBanking} from '../../models/import/EnableBanking';
+import {AspspData} from '../../models/import/AspspData';
+import {EU_COUNTRIES} from '../../constants/countries';
 
 @Component({
   selector: 'app-connect-bank-dialog',
@@ -96,13 +95,7 @@ export class ConnectBankDialogComponent {
     const key = asp.name + asp.country;
     this.connecting.set(key);
     try {
-      const redirectUrl = `${environment.appUrl}/import/callback`;
-      const result = await this.importService.startBankAuth(
-        integ.id,
-        asp.name,
-        asp.country,
-        redirectUrl,
-      );
+      const result = await this.importService.startBankAuth(integ.id, asp.name, asp.country);
       if (result?.url) {
         window.location.href = result.url;
       } else {

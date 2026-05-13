@@ -22,7 +22,6 @@ public class EnableBankingIntegration(
         try
         {
             string jwt = CreateJwt();
-            JwtSecurityTokenHandler handler = new();
 
             _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
             await GetApplicationAsync();
@@ -87,7 +86,7 @@ public class EnableBankingIntegration(
 
     public async Task<IReadOnlyList<AspspData>> StartConfigurationAsync(string[] countries)
     {
-        await AuthenticateAsync();
+        await EnsureAuthenticatedAsync();
         return await GetAspspsAsync(countries);
     }
 
@@ -108,17 +107,22 @@ public class EnableBankingIntegration(
     }
 
     public async Task<StartBankAuthApiResponse> StartBankAuthAsync(
-        string aspspName, string aspspCountry, string redirectUrl, string state)
+        string aspspName,
+        string aspspCountry,
+        string redirectUrl,
+        string state,
+        int maxConsentValidityDays,
+        string psuType)
     {
-        await AuthenticateAsync();
+        await EnsureAuthenticatedAsync();
 
         var body = new
         {
-            access = new { valid_until = DateTime.UtcNow.AddDays(90).ToString("o") },
+            access = new { valid_until = DateTime.UtcNow.AddDays(maxConsentValidityDays).ToString("o") },
             aspsp = new { name = aspspName, country = aspspCountry },
             state,
             redirect_url = redirectUrl,
-            psu_type = "personal"
+            psu_type = psuType
         };
 
         string json = System.Text.Json.JsonSerializer.Serialize(body);
@@ -132,7 +136,7 @@ public class EnableBankingIntegration(
 
     public async Task<AuthorizeSessionApiResponse> AuthorizeSessionAsync(string code)
     {
-        await AuthenticateAsync();
+        await EnsureAuthenticatedAsync();
 
         var body = new { code };
         string json = System.Text.Json.JsonSerializer.Serialize(body);
@@ -149,10 +153,10 @@ public class EnableBankingIntegration(
         DateOnly? dateFrom = null,
         DateOnly? dateTo = null)
     {
-        await AuthenticateAsync();
+        await EnsureAuthenticatedAsync();
 
-        var sb = new System.Text.StringBuilder($"/accounts/{accountUid}/transactions");
-        var query = new List<string>();
+        System.Text.StringBuilder sb = new($"/accounts/{accountUid}/transactions");
+        List<string> query = [];
         if (dateFrom.HasValue) query.Add($"date_from={dateFrom.Value:yyyy-MM-dd}");
         if (dateTo.HasValue) query.Add($"date_to={dateTo.Value:yyyy-MM-dd}");
         if (query.Count > 0) sb.Append('?').Append(string.Join('&', query));
@@ -162,5 +166,11 @@ public class EnableBankingIntegration(
         string responseJson = await response.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<EnableBankingHalTransactions>(responseJson)
             ?? throw new InvalidOperationException("Failed to deserialize transactions response.");
+    }
+
+    private async Task EnsureAuthenticatedAsync()
+    {
+        if (!await AuthenticateAsync())
+            throw new InvalidOperationException("Failed to authenticate with Enable Banking API.");
     }
 }
