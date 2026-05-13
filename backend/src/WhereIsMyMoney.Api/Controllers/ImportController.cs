@@ -6,7 +6,10 @@ namespace WhereIsMyMoney.Api.Controllers
 {
     [ApiController]
     [Route("import")]
-    public sealed class ImportController(EnableBankingStore store, EnableBankingAuthStateService authStateService) : ApiControllerBase
+    public sealed class ImportController(
+        EnableBankingStore store,
+        EnableBankingAuthStateService authStateService,
+        EnableBankingImporter importer) : ApiControllerBase
     {
         [HttpPost("enablebanking")]
         public async Task<IActionResult> Import([FromBody] CreateEnableBankingRequest request)
@@ -202,10 +205,22 @@ namespace WhereIsMyMoney.Api.Controllers
             await store.DeleteBankSessionAsync(id);
             return NoContent();
         }
-    }
 
+        [HttpPost("enablebanking/sessions/{id:long}/start-import")]
+        public async Task<IActionResult> StartImport(long id, [FromBody] StartBankSessionImportRequest request)
+        {
+            long accountId = GetAccountId();
+            EnableBankingBankSession? session = await store.GetBankSessionAsync(id);
+            if (session is null || session.AccountId != accountId)
+                return NotFound();
+
+            ImportResult result = await importer.StartImportRequest(request.From, id);
+            return Ok(result);
+        }
+    }
     public record StartConfigurationRequest(IReadOnlyList<string> Countries);
     public record ConfigureAspspsRequest(string SelectedAspsps, string SelectedCountries);
     public record StartBankAuthRequest(string AspspName, string AspspCountry, string RedirectUrl);
     public record CompleteBankAuthRequest(string Code, string State);
+    public record StartBankSessionImportRequest(DateTime? From);
 }

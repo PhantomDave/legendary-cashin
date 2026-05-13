@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using WhereIsMyMoney.Api.Data;
@@ -11,9 +12,11 @@ using WhereIsMyMoney.Api.Data;
 namespace WhereIsMyMoney.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260513125357_AddedLastImportAtUtc")]
+    partial class AddedLastImportAtUtc
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -201,7 +204,7 @@ namespace WhereIsMyMoney.Api.Migrations
                     b.Property<long>("IntegrationId")
                         .HasColumnType("bigint");
 
-                    b.Property<DateTime?>("LastImportAtUtc")
+                    b.Property<DateTime>("LastImportAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SessionId")
@@ -326,18 +329,11 @@ namespace WhereIsMyMoney.Api.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<string>("ExternalRef")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("BudgetId");
+                    b.HasIndex("AccountId");
 
-                    b.HasIndex("AccountId", "ExternalRef")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Transactions_AccountId_ExternalRef")
-                        .HasFilter("\"ExternalRef\" IS NOT NULL");
+                    b.HasIndex("BudgetId");
 
                     b.ToTable("Transactions");
                 });

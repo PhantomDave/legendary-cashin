@@ -176,6 +176,22 @@ public sealed class EnableBankingStore(AppDbContext db, EncryptionService encryp
         return true;
     }
 
+    public async Task<IReadOnlyList<EnableBankingBankSession>> GetAllBankSessionsAsync()
+    {
+        return await db.EnableBankingSessions
+            .OrderByDescending(s => s.CreatedAtUtc)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task UpdateLastImportAtUtcAsync(long sessionId, DateTime timestamp)
+    {
+        EnableBankingBankSession? session = await db.EnableBankingSessions.FindAsync(sessionId);
+        if (session is null) return;
+        session.LastImportAtUtc = timestamp;
+        await db.SaveChangesAsync();
+    }
+
     private void DecryptEntity(EnableBanking entity)
     {
         // Only decrypt if it's an EnableBankingIntegration with an encrypted certificate

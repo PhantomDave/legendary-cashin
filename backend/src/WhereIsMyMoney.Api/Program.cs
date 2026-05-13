@@ -45,6 +45,8 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<RecurrenceEngine>();
 builder.Services.AddScoped<RecurringTransactionStore>();
 builder.Services.AddHostedService<ScheduledTransactionProcessor>();
+builder.Services.AddSingleton<EnableBankingImporter>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<EnableBankingImporter>());
 
 
 WebApplication app = builder.Build();

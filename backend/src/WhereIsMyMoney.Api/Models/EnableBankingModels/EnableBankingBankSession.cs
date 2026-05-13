@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
+
 namespace WhereIsMyMoney.Api.Models.EnableBankingModels;
 
 public class EnableBankingBankSession
@@ -11,4 +13,5 @@ public class EnableBankingBankSession
     public DateTime ValidUntil { get; set; }
     public string AccountsJson { get; set; } = "[]"; // JSON array of account UIDs
     public DateTime CreatedAtUtc { get; set; }
+    public DateTime? LastImportAtUtc { get; set; }
 }

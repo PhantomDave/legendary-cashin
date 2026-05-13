@@ -113,7 +113,16 @@
           <td><p-tag [value]="session.aspspCountry" severity="info"></p-tag></td>
           <td>{{ session.validUntil | date: 'short' }}</td>
           <td>{{ session.createdAtUtc | date: 'short' }}</td>
-          <td>
+          <td class="flex gap-1">
+            <p-button
+              (onClick)="manualImport(session)"
+              icon="pi pi-sync"
+              severity="primary"
+              size="small"
+              [rounded]="true"
+              pTooltip="Sync Data"
+              tooltipPosition="top"
+            />
             <p-button
               (onClick)="disconnectSession($event, session)"
               icon="pi pi-times"
@@ -142,4 +151,11 @@
     (visibleChange)="connectDialogVisible.set($event)"
     [integration]="connectIntegration()"
   ></app-connect-bank-dialog>
+
+  <app-manual-import-dialog
+    [visible]="manualImportDialogVisible()"
+    (visibleChange)="manualImportDialogVisible.set($event)"
+    [session]="manualImportSession()"
+    (importRequested)="onManualImportRequested($event)"
+  ></app-manual-import-dialog>
 </div>

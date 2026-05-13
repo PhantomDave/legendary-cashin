@@ -55,6 +55,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(e => e.Description).HasMaxLength(256);
             entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
             entity.Property(e => e.Date).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.ExternalRef).HasMaxLength(128);
             entity.HasMany(e => e.Categories)
                   .WithMany();
             entity.HasOne<Account>()
@@ -65,6 +66,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
               .WithMany()
               .HasForeignKey(e => e.BudgetId)
               .OnDelete(DeleteBehavior.SetNull);
+            // Unique only where ExternalRef is non-null so manual transactions are unaffected.
+            entity.HasIndex(e => new { e.AccountId, e.ExternalRef })
+                  .IsUnique()
+                  .HasFilter("\"ExternalRef\" IS NOT NULL")
+                  .HasDatabaseName("IX_Transactions_AccountId_ExternalRef");
         });
 
         modelBuilder.Entity<RecurringTransaction>(entity =>

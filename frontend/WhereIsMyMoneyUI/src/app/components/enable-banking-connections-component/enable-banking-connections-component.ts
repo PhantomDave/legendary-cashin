@@ -13,6 +13,10 @@ import { ToastService } from '../../services/toast.service';
 import { ConfirmationService } from 'primeng/api';
 import { ConfigureAspspDialogComponent } from '../configure-aspsp-dialog-component/configure-aspsp-dialog-component';
 import { ConnectBankDialogComponent } from '../connect-bank-dialog-component/connect-bank-dialog-component';
+import {
+  ManualImportDialogComponent,
+  ManualImportRequest,
+} from '../manual-import-dialog-component/manual-import-dialog-component';
 
 @Component({
   selector: 'app-enable-banking-connections-component',
@@ -27,6 +31,7 @@ import { ConnectBankDialogComponent } from '../connect-bank-dialog-component/con
     ConfirmDialog,
     ConfigureAspspDialogComponent,
     ConnectBankDialogComponent,
+    ManualImportDialogComponent,
   ],
   providers: [ConfirmationService],
   templateUrl: './enable-banking-connections-component.html',
@@ -35,6 +40,7 @@ import { ConnectBankDialogComponent } from '../connect-bank-dialog-component/con
 export class EnableBankingConnectionsComponent {
   private readonly importService = inject(ImportService);
   private readonly confirmationService = inject(ConfirmationService);
+
   private readonly toast = inject(ToastService);
 
   readonly integrations = signal<EnableBanking[]>([]);
@@ -45,6 +51,8 @@ export class EnableBankingConnectionsComponent {
   readonly selectedIntegration = signal<EnableBanking | null>(null);
   readonly connectDialogVisible = signal(false);
   readonly connectIntegration = signal<EnableBanking | null>(null);
+  readonly manualImportDialogVisible = signal(false);
+  readonly manualImportSession = signal<EnableBankingBankSession | null>(null);
 
   constructor() {
     effect(() => {
@@ -121,5 +129,20 @@ export class EnableBankingConnectionsComponent {
         }
       },
     });
+  }
+
+  manualImport(session: EnableBankingBankSession): void {
+    this.manualImportSession.set(session);
+    this.manualImportDialogVisible.set(true);
+  }
+
+  async onManualImportRequested(request: ManualImportRequest): Promise<void> {
+    const resp = await this.importService.startImportFromBankSession(
+      request.session.id,
+      request.from,
+    );
+    resp
+      ? this.toast.success('Import started for ' + request.session.aspspName)
+      : this.toast.error('Failed Import for ' + request.session.aspspName);
   }
 }

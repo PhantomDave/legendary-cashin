@@ -32,4 +32,26 @@ namespace WhereIsMyMoney.Api.Models.EnableBankingModels
 
     public sealed record AccessData(
         [property: JsonPropertyName("valid_until")] DateTime ValidUntil);
+
+    // ── Transactions ──────────────────────────────────────────────────────────
+
+    public sealed record EnableBankingTransactionAmount(
+        [property: JsonPropertyName("currency")] string Currency,
+        [property: JsonPropertyName("amount")] string Amount);
+
+    public sealed record EnableBankingTransaction(
+        [property: JsonPropertyName("transaction_id")] string? TransactionId,
+        [property: JsonPropertyName("entry_reference")] string? EntryReference,
+        [property: JsonPropertyName("transaction_amount")] EnableBankingTransactionAmount TransactionAmount,
+        [property: JsonPropertyName("credit_debit_indicator")] string CreditDebitIndicator,
+        [property: JsonPropertyName("status")] string Status,
+        [property: JsonPropertyName("booking_date")] string? BookingDate,
+        [property: JsonPropertyName("value_date")] string? ValueDate,
+        [property: JsonPropertyName("remittance_information")] List<string>? RemittanceInformation,
+        [property: JsonPropertyName("creditor_name")] string? CreditorName,
+        [property: JsonPropertyName("debtor_name")] string? DebtorName);
+
+    public sealed record EnableBankingHalTransactions(
+        [property: JsonPropertyName("transactions")] List<EnableBankingTransaction> Transactions,
+        [property: JsonPropertyName("continuation_key")] string? ContinuationKey);
 }

@@ -187,4 +187,20 @@ export class ImportService {
       this.isLoading.set(false);
     }
   }
+
+  async startImportFromBankSession(sessionId: number, startDate: Date): Promise<boolean> {
+    this.isLoading.set(true);
+    this.error.set(null);
+    try {
+      await this.api.post(`${this.baseApiUrl}enablebanking/sessions/${sessionId}/start-import`, {
+        startDate,
+      });
+      return true;
+    } catch (err) {
+      this.error.set('Failed to start import from bank session.');
+      return false;
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
 }

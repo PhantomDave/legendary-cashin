@@ -8,18 +8,12 @@ namespace WhereIsMyMoney.Api.Services;
 /// Background service that processes due recurring transactions.
 /// Runs daily to generate new transaction entries from recurring schedules.
 /// </summary>
-public class ScheduledTransactionProcessor : BackgroundService
+public class ScheduledTransactionProcessor(
+    ILogger<ScheduledTransactionProcessor> logger,
+    IServiceProvider serviceProvider) : BackgroundService
 {
-    private readonly ILogger<ScheduledTransactionProcessor> _logger;
-    private readonly IServiceProvider _serviceProvider;
-
-    public ScheduledTransactionProcessor(
-        ILogger<ScheduledTransactionProcessor> logger,
-        IServiceProvider serviceProvider)
-    {
-        _logger = logger;
-        _serviceProvider = serviceProvider;
-    }
+    private readonly ILogger<ScheduledTransactionProcessor> _logger = logger;
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

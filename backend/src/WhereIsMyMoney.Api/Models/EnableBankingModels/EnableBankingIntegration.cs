@@ -143,4 +143,24 @@ public class EnableBankingIntegration(
         return System.Text.Json.JsonSerializer.Deserialize<AuthorizeSessionApiResponse>(responseJson)
             ?? throw new InvalidOperationException("Failed to deserialize AuthorizeSession response.");
     }
+
+    public async Task<EnableBankingHalTransactions> GetTransactionsAsync(
+        string accountUid,
+        DateOnly? dateFrom = null,
+        DateOnly? dateTo = null)
+    {
+        await AuthenticateAsync();
+
+        var sb = new System.Text.StringBuilder($"/accounts/{accountUid}/transactions");
+        var query = new List<string>();
+        if (dateFrom.HasValue) query.Add($"date_from={dateFrom.Value:yyyy-MM-dd}");
+        if (dateTo.HasValue) query.Add($"date_to={dateTo.Value:yyyy-MM-dd}");
+        if (query.Count > 0) sb.Append('?').Append(string.Join('&', query));
+
+        HttpResponseMessage response = await _http.GetAsync(sb.ToString());
+        await EnsureSuccessAsync(response);
+        string responseJson = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<EnableBankingHalTransactions>(responseJson)
+            ?? throw new InvalidOperationException("Failed to deserialize transactions response.");
+    }
 }
