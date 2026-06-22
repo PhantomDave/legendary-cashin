@@ -1,4 +1,7 @@
 # ── Build stage ───────────────────────────────────────────────────────────────
+# Bun stable Alpine images currently report Node.js v24.3.0, but Angular 22
+# requires >= v24.15. Pinning this canary digest keeps builds reproducible
+# until a stable Bun Alpine image satisfies the Angular runtime requirement.
 FROM oven/bun:canary-alpine@sha256:73c0ba32511da25fb50b88eaec19f4b37b05c263ce08ec942a349801ccfdadcc AS build
 
 WORKDIR /app
