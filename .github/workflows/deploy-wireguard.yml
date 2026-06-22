@@ -21,7 +21,27 @@ jobs:
 
       # ── WireGuard tunnel ────────────────────────────────────────────────────
       - name: Setup WireGuard
+        shell: bash
         run: |
+          missing=0
+          if [ -z "$WG_PEER_PUBLIC_KEY" ] && [ -z "$WG_SERVER_PUBLIC_KEY" ]; then
+            echo "::error::Missing required WireGuard secret: WG_PEER_PUBLIC_KEY (WG_SERVER_PUBLIC_KEY can be used as fallback)"
+            missing=1
+          elif [ -z "$WG_PEER_PUBLIC_KEY" ]; then
+            export WG_PEER_PUBLIC_KEY="$WG_SERVER_PUBLIC_KEY"
+          fi
+
+          # WG_PEER_PUBLIC_KEY is validated above because it can come from a fallback secret.
+          for var in WG_PRIVATE_KEY WG_CLIENT_IP WG_PEER_ENDPOINT WG_ALLOWED_IPS; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Missing required WireGuard secret: ${var}"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends wireguard
           sudo mkdir -p /etc/wireguard
@@ -51,6 +71,7 @@ jobs:
           WG_PRIVATE_KEY: ${{ secrets.WG_PRIVATE_KEY }}
           WG_CLIENT_IP: ${{ secrets.WG_CLIENT_IP }}
           WG_PEER_PUBLIC_KEY: ${{ secrets.WG_PEER_PUBLIC_KEY }}
+          WG_SERVER_PUBLIC_KEY: ${{ secrets.WG_SERVER_PUBLIC_KEY }}
           WG_PEER_ENDPOINT: ${{ secrets.WG_PEER_ENDPOINT }}
           WG_ALLOWED_IPS: ${{ secrets.WG_ALLOWED_IPS }}
 
