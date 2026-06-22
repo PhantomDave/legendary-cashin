@@ -27,12 +27,11 @@ jobs:
           if [ -z "$WG_PEER_PUBLIC_KEY" ] && [ -z "$WG_SERVER_PUBLIC_KEY" ]; then
             echo "::error::Missing required WireGuard secret: WG_PEER_PUBLIC_KEY (WG_SERVER_PUBLIC_KEY can be used as fallback)"
             missing=1
-          fi
-
-          if [ -z "$WG_PEER_PUBLIC_KEY" ]; then
+          elif [ -z "$WG_PEER_PUBLIC_KEY" ]; then
             export WG_PEER_PUBLIC_KEY="$WG_SERVER_PUBLIC_KEY"
           fi
 
+          # WG_PEER_PUBLIC_KEY is validated above because it can come from a fallback secret.
           for var in WG_PRIVATE_KEY WG_CLIENT_IP WG_PEER_ENDPOINT WG_ALLOWED_IPS; do
             if [ -z "${!var}" ]; then
               echo "::error::Missing required WireGuard secret: ${var}"
