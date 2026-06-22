@@ -1,5 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { CookieService } from 'ngx-cookie-service';
 import { ApiService } from './api.service';
 import { Account, AuthResponse } from '../models/auth/Account';
 import { Router } from '@angular/router';
@@ -14,6 +15,7 @@ export class AccountService {
 
   private router: Router = inject(Router);
   private api: ApiService = inject(ApiService);
+  private readonly cookieService = inject(CookieService);
   private baseApiUrl = '/accounts/';
   async register(email: string, username: string, password: string) {
     this.isLoading.set(true);
@@ -41,7 +43,7 @@ export class AccountService {
         password,
       });
       this.user.set(user!);
-      await cookieStore.set('authToken', user!.token);
+      this.cookieService.set('authToken', user!.token, { path: '/' });
       await this.router.navigate(['/dashboard']);
     } catch (e) {
       const errorMsg = this.extractErrorMessage(e);

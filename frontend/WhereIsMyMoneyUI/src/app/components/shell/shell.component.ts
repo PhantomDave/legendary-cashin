@@ -13,6 +13,7 @@ import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
 import { PanelMenuModule } from 'primeng/panelmenu';
 import { SelectModule } from 'primeng/select';
+import { CookieService } from 'ngx-cookie-service';
 import { APP_NAVIGATION_ITEMS } from '../../constants/app-navigation.config';
 import { Budget } from '../../models/budget/Budget';
 import { AccountService } from '../../services/account.service';
@@ -47,6 +48,7 @@ export class ShellComponent implements OnInit {
   readonly selectedBudget = this.budgetService.selectedBudget;
   readonly budgets = this.budgetService.budgets;
   private readonly accountService = inject(AccountService);
+  private readonly cookieService = inject(CookieService);
 
   async ngOnInit(): Promise<void> {
     this.syncThemeState();
@@ -89,7 +91,7 @@ export class ShellComponent implements OnInit {
 
   async logout(): Promise<void> {
     this.accountService.logout();
-    await cookieStore.delete('authToken');
+    this.cookieService.delete('authToken', '/');
     await this.router.navigate(['/account/login']);
   }
 
@@ -105,8 +107,8 @@ export class ShellComponent implements OnInit {
       return;
     }
 
-    const authToken = await cookieStore.get('authToken');
-    const jwt = this.parseJwtPayload(authToken?.value);
+    const authToken = this.cookieService.get('authToken');
+    const jwt = this.parseJwtPayload(authToken);
     const name =
       jwt?.['name'] ?? jwt?.['unique_name'] ?? jwt?.['preferred_username'] ?? jwt?.['sub'];
 
