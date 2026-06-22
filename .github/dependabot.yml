@@ -23,3 +23,15 @@ updates:
       github-actions-dependencies:
         patterns:
           - "*"
+
+  - package-ecosystem: "bun"
+    directory: "/frontend/WhereIsMyMoneyUI"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    groups:
+      bun-dependencies:
+        patterns:
+          - "*"
