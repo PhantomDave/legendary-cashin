@@ -1,5 +1,5 @@
 # ── Build stage ───────────────────────────────────────────────────────────────
-FROM oven/bun:canary-alpine AS build
+FROM oven/bun:canary-alpine@sha256:73c0ba32511da25fb50b88eaec19f4b37b05c263ce08ec942a349801ccfdadcc AS build
 
 WORKDIR /app
 
