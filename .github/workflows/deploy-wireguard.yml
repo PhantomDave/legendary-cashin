@@ -1,0 +1,174 @@
+name: Deploy to Homelab
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Prevent concurrent deployments
+concurrency:
+  group: deploy-homelab
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── WireGuard tunnel ────────────────────────────────────────────────────
+      - name: Setup WireGuard
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends wireguard
+          sudo mkdir -p /etc/wireguard
+          sudo chmod 700 /etc/wireguard
+
+          # Write private key
+          printf '%s' "$WG_PRIVATE_KEY" | sudo tee /etc/wireguard/privatekey > /dev/null
+          sudo chmod 600 /etc/wireguard/privatekey
+
+          # Write config
+          sudo tee /etc/wireguard/wg0.conf > /dev/null << EOF
+          [Interface]
+          PrivateKey = $(sudo cat /etc/wireguard/privatekey)
+          Address = ${WG_CLIENT_IP}/32
+
+          [Peer]
+          PublicKey = ${WG_PEER_PUBLIC_KEY}
+          Endpoint = ${WG_PEER_ENDPOINT}
+          AllowedIPs = ${WG_ALLOWED_IPS}
+          PersistentKeepalive = 25
+          EOF
+
+          sudo wg-quick up wg0
+          echo "WireGuard tunnel is up"
+          sudo wg show wg0
+        env:
+          WG_PRIVATE_KEY: ${{ secrets.WG_PRIVATE_KEY }}
+          WG_CLIENT_IP: ${{ secrets.WG_CLIENT_IP }}
+          WG_PEER_PUBLIC_KEY: ${{ secrets.WG_PEER_PUBLIC_KEY }}
+          WG_PEER_ENDPOINT: ${{ secrets.WG_PEER_ENDPOINT }}
+          WG_ALLOWED_IPS: ${{ secrets.WG_ALLOWED_IPS }}
+
+      # ── Build Docker images ─────────────────────────────────────────────────
+      - name: Build API image
+        run: docker build -t legendary-cashin-api:latest -f backend/Dockerfile backend/
+
+      - name: Build UI image
+        run: docker build -t legendary-cashin-ui:latest -f frontend/WhereIsMyMoneyUI/Dockerfile frontend/WhereIsMyMoneyUI/
+
+      # ── Export images as compressed tarballs ────────────────────────────────
+      - name: Export Docker images
+        run: |
+          docker save legendary-cashin-api:latest | gzip > /tmp/api-image.tar.gz
+          docker save legendary-cashin-ui:latest | gzip > /tmp/ui-image.tar.gz
+
+      # ── SSH key setup ───────────────────────────────────────────────────────
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$HOMELAB_SSH_KEY" > ~/.ssh/homelab_key
+          chmod 600 ~/.ssh/homelab_key
+          # Add homelab host key to known_hosts (via WireGuard IP)
+          ssh-keyscan -H "$HOMELAB_SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+        env:
+          HOMELAB_SSH_KEY: ${{ secrets.HOMELAB_SSH_KEY }}
+          HOMELAB_SSH_HOST: ${{ secrets.HOMELAB_SSH_HOST }}
+
+      # ── Copy artefacts to homelab ───────────────────────────────────────────
+      - name: Copy images and compose file to homelab
+        run: |
+          ssh -i ~/.ssh/homelab_key \
+              -o StrictHostKeyChecking=accept-new \
+              "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
+              "mkdir -p ~/legendary-cashin"
+
+          scp -i ~/.ssh/homelab_key \
+              /tmp/api-image.tar.gz \
+              /tmp/ui-image.tar.gz \
+              docker-compose.yml \
+              "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}:~/legendary-cashin/"
+        env:
+          HOMELAB_SSH_USER: ${{ secrets.HOMELAB_SSH_USER }}
+          HOMELAB_SSH_HOST: ${{ secrets.HOMELAB_SSH_HOST }}
+
+      # ── Write .env on homelab (secrets never exposed in remote command) ─────
+      - name: Write production .env on homelab
+        run: |
+          printf 'DB_PASSWORD=%s\nJWT_KEY=%s\n' "$DB_PASSWORD" "$JWT_KEY" \
+            | ssh -i ~/.ssh/homelab_key \
+                  -o StrictHostKeyChecking=accept-new \
+                  "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
+                  "cat > ~/legendary-cashin/.env"
+        env:
+          HOMELAB_SSH_USER: ${{ secrets.HOMELAB_SSH_USER }}
+          HOMELAB_SSH_HOST: ${{ secrets.HOMELAB_SSH_HOST }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_KEY: ${{ secrets.JWT_KEY }}
+
+      # ── Deploy on homelab ───────────────────────────────────────────────────
+      - name: Load images and run docker compose
+        run: |
+          ssh -i ~/.ssh/homelab_key \
+              -o StrictHostKeyChecking=accept-new \
+              "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" << 'ENDSSH'
+          set -e
+          cd ~/legendary-cashin
+
+          echo "==> Loading Docker images..."
+          docker load < api-image.tar.gz
+          docker load < ui-image.tar.gz
+
+          echo "==> Pulling latest Postgres image..."
+          docker pull postgres:16-alpine
+
+          echo "==> Deploying with docker compose..."
+          docker compose down --remove-orphans --timeout 30
+          docker compose up -d
+
+          echo "==> Waiting for all services to become healthy (max 2 minutes)..."
+          TIMEOUT=120
+          ELAPSED=0
+          while [ "$ELAPSED" -lt "$TIMEOUT" ]; do
+            TOTAL=$(docker compose ps -q | wc -l)
+            HEALTHY=$(docker inspect $(docker compose ps -q) \
+              --format '{{.State.Health.Status}}' 2>/dev/null \
+              | grep -c '^healthy$' || true)
+            echo "  Healthy: $HEALTHY / $TOTAL"
+            if [ "$HEALTHY" -ge "$TOTAL" ] && [ "$TOTAL" -gt "0" ]; then
+              echo "All services healthy!"
+              break
+            fi
+            sleep 5
+            ELAPSED=$((ELAPSED + 5))
+          done
+
+          if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+            echo "Timed out waiting for healthy services."
+            docker compose ps
+            exit 1
+          fi
+          ENDSSH
+        env:
+          HOMELAB_SSH_USER: ${{ secrets.HOMELAB_SSH_USER }}
+          HOMELAB_SSH_HOST: ${{ secrets.HOMELAB_SSH_HOST }}
+
+      # ── Verify deployment ────────────────────────────────────────────────────
+      - name: Verify API health
+        run: |
+          ssh -i ~/.ssh/homelab_key \
+              -o StrictHostKeyChecking=accept-new \
+              "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
+              "curl -sf http://localhost:5080/health && echo '✅ API is healthy'"
+        env:
+          HOMELAB_SSH_USER: ${{ secrets.HOMELAB_SSH_USER }}
+          HOMELAB_SSH_HOST: ${{ secrets.HOMELAB_SSH_HOST }}
+
+      # ── Always tear down WireGuard ──────────────────────────────────────────
+      - name: Teardown WireGuard
+        if: always()
+        run: sudo wg-quick down wg0 || true
