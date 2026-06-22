@@ -106,7 +106,10 @@ jobs:
           printf '%s\n' "$HOMELAB_SSH_KEY" > ~/.ssh/homelab_key
           chmod 600 ~/.ssh/homelab_key
           # Add homelab host key to known_hosts (via WireGuard IP)
-          ssh-keyscan -H "$HOMELAB_SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          if ! ssh-keyscan -H "$HOMELAB_SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null; then
+            echo "::error::Failed to fetch SSH host key for ${HOMELAB_SSH_HOST}."
+            exit 1
+          fi
         env:
           HOMELAB_SSH_KEY: ${{ secrets.HOMELAB_SSH_KEY }}
           HOMELAB_SSH_HOST: ${{ secrets.HOMELAB_SSH_HOST }}
@@ -130,24 +133,21 @@ jobs:
           echo "Checking route to homelab host..."
           ip route get "$HOMELAB_SSH_HOST" || true
 
-          echo "Checking TCP reachability to ${HOMELAB_SSH_HOST}:22..."
-          if ! timeout 10 bash -c "cat < /dev/null > /dev/tcp/${HOMELAB_SSH_HOST}/22"; then
-            echo "::error::Unable to reach ${HOMELAB_SSH_HOST}:22 over WireGuard."
+          echo "Checking SSH reachability and login..."
+          if ! ssh -i ~/.ssh/homelab_key \
+              -o BatchMode=yes \
+              -o ConnectionAttempts=1 \
+              -o ConnectTimeout=10 \
+              -o StrictHostKeyChecking=yes \
+              "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
+              "echo 'SSH preflight succeeded'"; then
+            echo "::error::Unable to establish SSH session to ${HOMELAB_SSH_HOST}."
             echo "WireGuard diagnostics:"
             sudo wg show wg0 || true
             ip -brief address show wg0 || true
             ip route show || true
             exit 1
           fi
-
-          echo "Checking SSH login..."
-          ssh -i ~/.ssh/homelab_key \
-              -o BatchMode=yes \
-              -o ConnectionAttempts=1 \
-              -o ConnectTimeout=10 \
-              -o StrictHostKeyChecking=accept-new \
-              "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
-              "echo 'SSH preflight succeeded'"
         env:
           HOMELAB_SSH_HOST: ${{ secrets.HOMELAB_SSH_HOST }}
           HOMELAB_SSH_USER: ${{ secrets.HOMELAB_SSH_USER }}
@@ -171,7 +171,7 @@ jobs:
           ssh -i ~/.ssh/homelab_key \
               -o ConnectionAttempts=1 \
               -o ConnectTimeout=10 \
-              -o StrictHostKeyChecking=accept-new \
+              -o StrictHostKeyChecking=yes \
               "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
               "mkdir -p ~/legendary-cashin"
 
@@ -191,7 +191,7 @@ jobs:
         run: |
           printf 'DB_PASSWORD=%s\nJWT_KEY=%s\n' "$DB_PASSWORD" "$JWT_KEY" \
             | ssh -i ~/.ssh/homelab_key \
-                  -o StrictHostKeyChecking=accept-new \
+                  -o StrictHostKeyChecking=yes \
                   "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
                   "cat > ~/legendary-cashin/.env"
         env:
@@ -204,7 +204,7 @@ jobs:
       - name: Load images and run docker compose
         run: |
           ssh -i ~/.ssh/homelab_key \
-              -o StrictHostKeyChecking=accept-new \
+              -o StrictHostKeyChecking=yes \
               "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" << 'ENDSSH'
           set -e
           cd ~/legendary-cashin
@@ -251,7 +251,7 @@ jobs:
       - name: Verify API health
         run: |
           ssh -i ~/.ssh/homelab_key \
-              -o StrictHostKeyChecking=accept-new \
+              -o StrictHostKeyChecking=yes \
               "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
               "curl -sf http://localhost:5080/openapi/v1.json && echo '✅ API is healthy'"
         env:
