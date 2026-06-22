@@ -23,17 +23,19 @@ jobs:
       - name: Setup WireGuard
         shell: bash
         run: |
+          set -euo pipefail
+
           missing=0
-          if [ -z "$WG_PEER_PUBLIC_KEY" ] && [ -z "$WG_SERVER_PUBLIC_KEY" ]; then
+          if [ -z "${WG_PEER_PUBLIC_KEY:-}" ] && [ -z "${WG_SERVER_PUBLIC_KEY:-}" ]; then
             echo "::error::Missing required WireGuard secret: WG_PEER_PUBLIC_KEY (WG_SERVER_PUBLIC_KEY can be used as fallback)"
             missing=1
-          elif [ -z "$WG_PEER_PUBLIC_KEY" ]; then
+          elif [ -z "${WG_PEER_PUBLIC_KEY:-}" ]; then
             export WG_PEER_PUBLIC_KEY="$WG_SERVER_PUBLIC_KEY"
           fi
 
           # WG_PEER_PUBLIC_KEY is validated above because it can come from a fallback secret.
           for var in WG_PRIVATE_KEY WG_CLIENT_IP WG_PEER_ENDPOINT WG_ALLOWED_IPS; do
-            if [ -z "${!var}" ]; then
+            if [ -z "${!var:-}" ]; then
               echo "::error::Missing required WireGuard secret: ${var}"
               missing=1
             fi
@@ -64,9 +66,23 @@ jobs:
           PersistentKeepalive = 25
           EOF
 
-          sudo wg-quick up wg0
+          if ! sudo wg-quick up wg0; then
+            echo "::error::Failed to bring up WireGuard interface wg0."
+            echo "WireGuard diagnostics:"
+            sudo wg show all || true
+            ip -brief address show wg0 || true
+            ip route show || true
+            exit 1
+          fi
+
+          if ! ip link show wg0 > /dev/null 2>&1; then
+            echo "::error::WireGuard interface wg0 was not created."
+            exit 1
+          fi
+
           echo "WireGuard tunnel is up"
           sudo wg show wg0
+          ip -brief address show wg0
         env:
           WG_PRIVATE_KEY: ${{ secrets.WG_PRIVATE_KEY }}
           WG_CLIENT_IP: ${{ secrets.WG_CLIENT_IP }}
@@ -74,6 +90,67 @@ jobs:
           WG_SERVER_PUBLIC_KEY: ${{ secrets.WG_SERVER_PUBLIC_KEY }}
           WG_PEER_ENDPOINT: ${{ secrets.WG_PEER_ENDPOINT }}
           WG_ALLOWED_IPS: ${{ secrets.WG_ALLOWED_IPS }}
+
+      # ── SSH key setup ───────────────────────────────────────────────────────
+      - name: Setup SSH key
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${HOMELAB_SSH_KEY:-}" ]; then
+            echo "::error::Missing required deployment secret: HOMELAB_SSH_KEY"
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "$HOMELAB_SSH_KEY" > ~/.ssh/homelab_key
+          chmod 600 ~/.ssh/homelab_key
+          # Add homelab host key to known_hosts (via WireGuard IP)
+          ssh-keyscan -H "$HOMELAB_SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+        env:
+          HOMELAB_SSH_KEY: ${{ secrets.HOMELAB_SSH_KEY }}
+          HOMELAB_SSH_HOST: ${{ secrets.HOMELAB_SSH_HOST }}
+
+      - name: Preflight homelab SSH connectivity
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          missing=0
+          for var in HOMELAB_SSH_HOST HOMELAB_SSH_USER; do
+            if [ -z "${!var:-}" ]; then
+              echo "::error::Missing required deployment secret: ${var}"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+          echo "Checking route to homelab host..."
+          ip route get "$HOMELAB_SSH_HOST" || true
+
+          echo "Checking TCP reachability to ${HOMELAB_SSH_HOST}:22..."
+          if ! timeout 10 bash -c "cat < /dev/null > /dev/tcp/${HOMELAB_SSH_HOST}/22"; then
+            echo "::error::Unable to reach ${HOMELAB_SSH_HOST}:22 over WireGuard."
+            echo "WireGuard diagnostics:"
+            sudo wg show wg0 || true
+            ip -brief address show wg0 || true
+            ip route show || true
+            exit 1
+          fi
+
+          echo "Checking SSH login..."
+          ssh -i ~/.ssh/homelab_key \
+              -o BatchMode=yes \
+              -o ConnectionAttempts=1 \
+              -o ConnectTimeout=10 \
+              -o StrictHostKeyChecking=accept-new \
+              "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
+              "echo 'SSH preflight succeeded'"
+        env:
+          HOMELAB_SSH_HOST: ${{ secrets.HOMELAB_SSH_HOST }}
+          HOMELAB_SSH_USER: ${{ secrets.HOMELAB_SSH_USER }}
 
       # ── Build Docker images ─────────────────────────────────────────────────
       - name: Build API image
@@ -88,27 +165,19 @@ jobs:
           docker save legendary-cashin-api:latest | gzip > /tmp/api-image.tar.gz
           docker save legendary-cashin-ui:latest | gzip > /tmp/ui-image.tar.gz
 
-      # ── SSH key setup ───────────────────────────────────────────────────────
-      - name: Setup SSH key
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$HOMELAB_SSH_KEY" > ~/.ssh/homelab_key
-          chmod 600 ~/.ssh/homelab_key
-          # Add homelab host key to known_hosts (via WireGuard IP)
-          ssh-keyscan -H "$HOMELAB_SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-        env:
-          HOMELAB_SSH_KEY: ${{ secrets.HOMELAB_SSH_KEY }}
-          HOMELAB_SSH_HOST: ${{ secrets.HOMELAB_SSH_HOST }}
-
       # ── Copy artefacts to homelab ───────────────────────────────────────────
       - name: Copy images and compose file to homelab
         run: |
           ssh -i ~/.ssh/homelab_key \
+              -o ConnectionAttempts=1 \
+              -o ConnectTimeout=10 \
               -o StrictHostKeyChecking=accept-new \
               "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
               "mkdir -p ~/legendary-cashin"
 
           scp -i ~/.ssh/homelab_key \
+              -o ConnectionAttempts=1 \
+              -o ConnectTimeout=10 \
               /tmp/api-image.tar.gz \
               /tmp/ui-image.tar.gz \
               docker-compose.yml \
