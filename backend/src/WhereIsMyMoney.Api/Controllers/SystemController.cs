@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WhereIsMyMoney.Api.Controllers
@@ -7,6 +8,7 @@ namespace WhereIsMyMoney.Api.Controllers
     public sealed class SystemController : ControllerBase
     {
         [HttpGet("health")]
+        [AllowAnonymous]
         public IActionResult GetHealth()
         {
             return Ok(new

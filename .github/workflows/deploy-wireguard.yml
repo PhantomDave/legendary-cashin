@@ -163,7 +163,7 @@ jobs:
           ssh -i ~/.ssh/homelab_key \
               -o StrictHostKeyChecking=accept-new \
               "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
-              "curl -sf http://localhost:5080/health && echo '✅ API is healthy'"
+              "curl -sf http://localhost:5080/openapi/v1.json && echo '✅ API is healthy'"
         env:
           HOMELAB_SSH_USER: ${{ secrets.HOMELAB_SSH_USER }}
           HOMELAB_SSH_HOST: ${{ secrets.HOMELAB_SSH_HOST }}
