@@ -31,6 +31,33 @@ public sealed class EnableBankingStore(AppDbContext db, EncryptionService encryp
         return entities;
     }
 
+    public async Task<IReadOnlyList<EnableBankingIntegration>> GetAllIntegrationsAsync(long accountId)
+    {
+        IReadOnlyList<EnableBankingIntegration> integrations = await db.EnableBanking
+            .Where(e => e.AccountId == accountId)
+            .OfType<EnableBankingIntegration>()
+            .AsNoTracking()
+            .ToListAsync();
+
+
+        return integrations;
+    }
+
+    public async Task<EnableBankingIntegration?> GetIntegrationById(long accountId, long integrationId)
+    {
+        EnableBankingIntegration? integration = await db.EnableBanking
+            .Where(e => e.AccountId == accountId && e.Id == integrationId)
+            .OfType<EnableBankingIntegration>()
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+        if (integration is null) return null;
+
+        integration.Certificate = encryptionService.Decrypt(integration.Certificate);
+
+        return integration;
+    }
+
     public async Task<IReadOnlyList<EnableBanking>> GetAllByAccountId(long accountId)
     {
         IReadOnlyList<EnableBanking> entities = await db.EnableBanking
@@ -99,6 +126,7 @@ public sealed class EnableBankingStore(AppDbContext db, EncryptionService encryp
         if (existing is null) return false;
 
         existing.Asps = value.Asps;
+        existing.Configuration = value.Configuration;
 
         db.EnableBanking.Update(existing);
         await db.SaveChangesAsync();
@@ -113,6 +141,55 @@ public sealed class EnableBankingStore(AppDbContext db, EncryptionService encryp
         db.EnableBanking.Remove(enableBanking);
         await db.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<EnableBankingBankSession> CreateBankSessionAsync(EnableBankingBankSession session)
+    {
+        session.CreatedAtUtc = DateTime.UtcNow;
+        db.EnableBankingSessions.Add(session);
+        await db.SaveChangesAsync();
+        return session;
+    }
+
+    public async Task<IReadOnlyList<EnableBankingBankSession>> GetBankSessionsByAccountIdAsync(long accountId)
+    {
+        return await db.EnableBankingSessions
+            .Where(s => s.AccountId == accountId)
+            .OrderByDescending(s => s.CreatedAtUtc)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<EnableBankingBankSession?> GetBankSessionAsync(long id)
+    {
+        return await db.EnableBankingSessions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == id);
+    }
+
+    public async Task<bool> DeleteBankSessionAsync(long id)
+    {
+        EnableBankingBankSession? session = await db.EnableBankingSessions.FindAsync(id);
+        if (session is null) return false;
+        db.EnableBankingSessions.Remove(session);
+        await db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<IReadOnlyList<EnableBankingBankSession>> GetAllBankSessionsAsync()
+    {
+        return await db.EnableBankingSessions
+            .OrderByDescending(s => s.CreatedAtUtc)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task UpdateLastImportAtUtcAsync(long sessionId, DateTime timestamp)
+    {
+        EnableBankingBankSession? session = await db.EnableBankingSessions.FindAsync(sessionId);
+        if (session is null) return;
+        session.LastImportAtUtc = timestamp;
+        await db.SaveChangesAsync();
     }
 
     private void DecryptEntity(EnableBanking entity)

@@ -1,0 +1,48 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  header="Manual Import"
+  [modal]="true"
+  [style]="{ width: '420px' }"
+  (onHide)="onHide()"
+>
+  <div class="flex flex-col gap-4 py-2">
+    <p class="text-sm text-gray-600">
+      Select a start date and time to import transactions from. Only transactions on or after this
+      datetime will be fetched.
+    </p>
+
+    <div class="flex flex-col gap-1">
+      <label class="text-sm font-medium text-gray-700" for="importFrom">Import from</label>
+      <p-datepicker
+        inputId="importFrom"
+        [(ngModel)]="selectedDate"
+        [showTime]="true"
+        [showSeconds]="false"
+        [showIcon]="true"
+        [maxDate]="today"
+        dateFormat="dd/mm/yy"
+        placeholder="Select date and time"
+        appendTo="body"
+        [style]="{ width: '100%' }"
+      ></p-datepicker>
+    </div>
+  </div>
+
+  <ng-template #footer>
+    <div class="flex justify-end gap-2">
+      <p-button
+        label="Cancel"
+        icon="pi pi-times"
+        severity="secondary"
+        (onClick)="cancel()"
+      ></p-button>
+      <p-button
+        label="Import"
+        icon="pi pi-sync"
+        [disabled]="!selectedDate"
+        (onClick)="confirm()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

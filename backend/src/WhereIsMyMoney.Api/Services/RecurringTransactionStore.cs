@@ -68,7 +68,7 @@ public sealed class RecurringTransactionStore(AppDbContext db, RecurrenceEngine 
             BudgetId = request.BudgetId,
             Description = request.Description,
             Amount = request.Amount,
-            CategoryIds = request.CategoryIds,
+            CategoryIds = request.CategoryIds.ToList(),
             Frequency = request.Frequency,
             Interval = request.Interval,
             StartDate = request.StartDate,
@@ -117,7 +117,7 @@ public sealed class RecurringTransactionStore(AppDbContext db, RecurrenceEngine 
             entity.Amount = request.Amount.Value;
 
         if (request.CategoryIds is not null)
-            entity.CategoryIds = request.CategoryIds;
+            entity.CategoryIds = request.CategoryIds.ToList();
 
         if (request.Frequency.HasValue)
             entity.Frequency = request.Frequency.Value;

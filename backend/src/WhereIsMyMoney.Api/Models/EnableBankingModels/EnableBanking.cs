@@ -6,5 +6,6 @@ namespace WhereIsMyMoney.Api.Models.EnableBankingModels
         public long AccountId { get; set; }
         public string? Asps { get; set; } // Comma-separated list of selected Account Servicing Payment Service Providers
         public DateTime CreatedAtUtc { get; set; }
+        public string? Configuration { get; set; } // JSON string containing additional configuration details
     }
 }

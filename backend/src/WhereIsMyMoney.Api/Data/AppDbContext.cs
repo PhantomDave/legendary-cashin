@@ -13,6 +13,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<RecurringTransaction> RecurringTransactions => Set<RecurringTransaction>();
     public DbSet<EnableBanking> EnableBanking => Set<EnableBanking>();
+    public DbSet<EnableBankingBankSession> EnableBankingSessions => Set<EnableBankingBankSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -54,6 +55,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             entity.Property(e => e.Description).HasMaxLength(256);
             entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
             entity.Property(e => e.Date).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.ExternalRef).HasMaxLength(128);
             entity.HasMany(e => e.Categories)
                   .WithMany();
             entity.HasOne<Account>()
@@ -64,6 +66,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
               .WithMany()
               .HasForeignKey(e => e.BudgetId)
               .OnDelete(DeleteBehavior.SetNull);
+            // Unique only where ExternalRef is non-null so manual transactions are unaffected.
+            entity.HasIndex(e => new { e.AccountId, e.ExternalRef })
+                  .IsUnique()
+                  .HasFilter("\"ExternalRef\" IS NOT NULL")
+                  .HasDatabaseName("IX_Transactions_AccountId_ExternalRef");
         });
 
         modelBuilder.Entity<RecurringTransaction>(entity =>
@@ -100,6 +107,22 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             entity.Property(e => e.ApplicationId).HasMaxLength(256);
             entity.Property(e => e.Certificate).HasMaxLength(5000);
+        });
+
+        modelBuilder.Entity<EnableBankingBankSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SessionId).HasMaxLength(256);
+            entity.Property(e => e.AspspName).HasMaxLength(256);
+            entity.Property(e => e.AspspCountry).HasMaxLength(2);
+            entity.Property(e => e.AccountsJson).HasColumnType("text");
+            entity.Property(e => e.CreatedAtUtc).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasOne<Account>()
+                  .WithMany()
+                  .HasForeignKey(e => e.AccountId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(e => e.AccountId);
+            entity.HasIndex(e => e.IntegrationId);
         });
     }
 }

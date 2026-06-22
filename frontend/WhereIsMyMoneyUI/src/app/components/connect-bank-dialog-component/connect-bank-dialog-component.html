@@ -1,0 +1,98 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  header="Connect Bank"
+  [modal]="true"
+  [style]="{ width: '640px' }"
+  (onShow)="onShow()"
+  (onHide)="onHide()"
+>
+  <!-- Country picker — shown when no countries are pre-configured -->
+  @if (showCountryPicker()) {
+  <div class="flex flex-col gap-4 py-2">
+    <p class="text-sm text-gray-600">
+      Select the countries your bank operates in to find available banks:
+    </p>
+    <p-multiselect
+      [options]="allCountries"
+      [(ngModel)]="manualCountries"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="Select countries..."
+      appendTo="body"
+      display="chip"
+      [style]="{ width: '100%' }"
+      [filter]="true"
+    ></p-multiselect>
+    <div class="flex justify-end">
+      <p-button
+        label="Find Banks"
+        icon="pi pi-search"
+        [loading]="isLoading()"
+        [disabled]="manualCountries.length === 0"
+        (onClick)="fetchAspsps(manualCountries)"
+      ></p-button>
+    </div>
+  </div>
+  }
+
+  <!-- Loading spinner (only when not showing picker at the same time) -->
+  @if (isLoading() && !showCountryPicker()) {
+  <div class="flex justify-center py-8">
+    <p-progressSpinner></p-progressSpinner>
+  </div>
+  }
+
+  <!-- Bank list -->
+  @if (!isLoading() && aspsps().length > 0) {
+  <div>
+    @if (showCountryPicker()) {
+    <hr class="my-4" />
+    }
+    <p class="mb-3 text-sm text-gray-600">Select the bank you want to connect to:</p>
+    <p-table
+      [value]="aspsps()"
+      [tableStyle]="{ 'min-width': '100%' }"
+      [scrollable]="true"
+      scrollHeight="340px"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Bank</th>
+          <th style="width: 90px">Country</th>
+          <th style="width: 110px"></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-asp>
+        <tr>
+          <td>
+            <div class="flex items-center gap-2">
+              @if (asp.logo) {
+              <img [src]="asp.logo" [alt]="asp.name" class="aspsp-logo" />
+              }
+              <span>{{ asp.name }}</span>
+            </div>
+          </td>
+          <td>
+            <p-tag [value]="asp.country" severity="info"></p-tag>
+          </td>
+          <td>
+            <p-button
+              label="Connect"
+              icon="pi pi-link"
+              size="small"
+              [loading]="connecting() === asp.name + asp.country"
+              (onClick)="connect(asp)"
+            ></p-button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
+
+  <!-- No results after search -->
+  @if (!isLoading() && aspsps().length === 0 && !showCountryPicker()) {
+  <p class="text-center text-gray-500 py-4">No banks found for the selected countries.</p>
+  }
+</p-dialog>

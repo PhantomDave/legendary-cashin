@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { CreateBudgetComponent } from './create-budget-component';
+import { provideTestDependencies } from '../../../testing/test-providers';
 
 describe('CreateBudgetComponent', () => {
   let component: CreateBudgetComponent;
@@ -9,6 +9,7 @@ describe('CreateBudgetComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [CreateBudgetComponent],
+      providers: provideTestDependencies(),
     }).compileComponents();
 
     fixture = TestBed.createComponent(CreateBudgetComponent);
