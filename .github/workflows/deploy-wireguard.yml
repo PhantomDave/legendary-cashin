@@ -30,12 +30,12 @@ jobs:
             echo "::error::Missing required WireGuard secret: WG_PEER_PUBLIC_KEY (WG_SERVER_PUBLIC_KEY can be used as fallback)"
             missing=1
           elif [ -z "${WG_PEER_PUBLIC_KEY:-}" ]; then
-            export WG_PEER_PUBLIC_KEY="$WG_SERVER_PUBLIC_KEY"
+            export WG_PEER_PUBLIC_KEY="${WG_SERVER_PUBLIC_KEY:-}"
           fi
 
           # WG_PEER_PUBLIC_KEY is validated above because it can come from a fallback secret.
           for var in WG_PRIVATE_KEY WG_CLIENT_IP WG_PEER_ENDPOINT WG_ALLOWED_IPS; do
-            if [ -z "${!var:-}" ]; then
+            if [ -z "$(printenv "$var")" ]; then
               echo "::error::Missing required WireGuard secret: ${var}"
               missing=1
             fi
@@ -121,7 +121,7 @@ jobs:
 
           missing=0
           for var in HOMELAB_SSH_HOST HOMELAB_SSH_USER; do
-            if [ -z "${!var:-}" ]; then
+            if [ -z "$(printenv "$var")" ]; then
               echo "::error::Missing required deployment secret: ${var}"
               missing=1
             fi
