@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, 'dependabot/**']
 
 jobs:
   # ── Detect which parts of the codebase changed ─────────────────────────────
