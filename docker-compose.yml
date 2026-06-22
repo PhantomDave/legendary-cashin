@@ -6,14 +6,56 @@ services:
     environment:
       POSTGRES_DB: cashin
       POSTGRES_USER: cashin
-      POSTGRES_PASSWORD: cashin_dev_password
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cashin_dev_password}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cashin -d cashin"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+
+  api:
+    image: legendary-cashin-api:latest
+    container_name: legendary-cashin-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "5080:5080"
+    environment:
+      ASPNETCORE_URLS: http://0.0.0.0:5080
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=cashin;Username=cashin;Password=${DB_PASSWORD:?DB_PASSWORD is required}
+      Jwt__Key: ${JWT_KEY}
+      Jwt__Issuer: WhereIsMyMoney.Api
+      Jwt__Audience: WhereIsMyMoney.Client
+      Jwt__ExpirationMinutes: "60"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5080/openapi/v1.json || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  ui:
+    image: legendary-cashin-ui:latest
+    container_name: legendary-cashin-ui
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "4200:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
       start_period: 10s
 
 volumes:

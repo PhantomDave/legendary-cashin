@@ -1,0 +1,31 @@
+name: Dependabot Auto-merge
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Auto-merge Dependabot PRs
+    runs-on: ubuntu-latest
+    # Only run for Dependabot-authored PRs
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge
+        # Uses squash merge; switches to 'merge' or 'rebase' if preferred.
+        # Auto-merge waits for all required status checks (including "CI / Completed")
+        # before actually merging — so this never bypasses the gate.
+        # NOTE: "Allow auto-merge" must be enabled in the repo settings:
+        #   Settings → General → Pull Requests → Allow auto-merge
+        run: gh pr merge --auto --squash "${{ github.event.pull_request.html_url }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
