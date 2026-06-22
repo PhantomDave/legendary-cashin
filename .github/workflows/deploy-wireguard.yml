@@ -21,15 +21,16 @@ jobs:
 
       # ── WireGuard tunnel ────────────────────────────────────────────────────
       - name: Setup WireGuard
+        shell: bash
         run: |
+          missing=0
           if [ -z "$WG_PEER_PUBLIC_KEY" ] && [ -z "$WG_SERVER_PUBLIC_KEY" ]; then
             echo "::error::Missing required WireGuard secret: WG_PEER_PUBLIC_KEY (or fallback WG_SERVER_PUBLIC_KEY)"
-            exit 1
+            missing=1
           fi
 
           export WG_PEER_PUBLIC_KEY="${WG_PEER_PUBLIC_KEY:-$WG_SERVER_PUBLIC_KEY}"
 
-          missing=0
           for var in WG_PRIVATE_KEY WG_CLIENT_IP WG_PEER_ENDPOINT WG_ALLOWED_IPS; do
             if [ -z "${!var}" ]; then
               echo "::error::Missing required WireGuard secret: ${var}"
