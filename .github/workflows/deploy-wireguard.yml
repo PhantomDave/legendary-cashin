@@ -22,9 +22,7 @@ jobs:
       # ── WireGuard tunnel ────────────────────────────────────────────────────
       - name: Setup WireGuard
         run: |
-          if [ -z "$WG_PEER_PUBLIC_KEY" ] && [ -n "$WG_SERVER_PUBLIC_KEY" ]; then
-            WG_PEER_PUBLIC_KEY="$WG_SERVER_PUBLIC_KEY"
-          fi
+          export WG_PEER_PUBLIC_KEY="${WG_PEER_PUBLIC_KEY:-$WG_SERVER_PUBLIC_KEY}"
 
           missing=0
           for var in WG_PRIVATE_KEY WG_CLIENT_IP WG_PEER_PUBLIC_KEY WG_PEER_ENDPOINT WG_ALLOWED_IPS; do
