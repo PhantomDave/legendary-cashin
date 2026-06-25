@@ -189,7 +189,7 @@ jobs:
       # ── Write .env on homelab (secrets never exposed in remote command) ─────
       - name: Write production .env on homelab
         run: |
-          printf 'DB_PASSWORD=%s\nJWT_KEY=%s\n' "$DB_PASSWORD" "$JWT_KEY" \
+          printf 'DB_PASSWORD=%s\nJWT_KEY=%s\nENABLE_BANKING_REDIRECT_URL=%s\n' "$DB_PASSWORD" "$JWT_KEY" "$ENABLE_BANKING_REDIRECT_URL" \
             | ssh -i ~/.ssh/homelab_key \
                   -o StrictHostKeyChecking=yes \
                   "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
@@ -199,8 +199,9 @@ jobs:
           HOMELAB_SSH_HOST: ${{ secrets.HOMELAB_SSH_HOST }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_KEY: ${{ secrets.JWT_KEY }}
+          ENABLE_BANKING_REDIRECT_URL: ${{ secrets.ENABLE_BANKING_REDIRECT_URL }}
 
-    # ── Deploy on homelab ───────────────────────────────────────────────────
+      # ── Deploy on homelab ───────────────────────────────────────────────────
       - name: Load images and run podman-compose
         run: |
           ssh -i ~/.ssh/homelab_key \

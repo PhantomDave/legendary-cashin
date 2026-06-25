@@ -35,6 +35,7 @@ services:
       Jwt__Issuer: WhereIsMyMoney.Api
       Jwt__Audience: WhereIsMyMoney.Client
       Jwt__ExpirationMinutes: "60"
+      EnableBanking__RedirectUrl: ${ENABLE_BANKING_REDIRECT_URL:?ENABLE_BANKING_REDIRECT_URL is required}
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5080/openapi/v1.json || exit 1"]
       interval: 15s
