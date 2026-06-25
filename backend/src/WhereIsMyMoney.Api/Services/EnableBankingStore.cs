@@ -146,6 +146,7 @@ public sealed class EnableBankingStore(AppDbContext db, EncryptionService encryp
     public async Task<EnableBankingBankSession> CreateBankSessionAsync(EnableBankingBankSession session)
     {
         session.CreatedAtUtc = DateTime.UtcNow;
+        session.LastImportAtUtc ??= session.CreatedAtUtc;
         db.EnableBankingSessions.Add(session);
         await db.SaveChangesAsync();
         return session;
