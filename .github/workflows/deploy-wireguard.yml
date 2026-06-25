@@ -200,8 +200,8 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_KEY: ${{ secrets.JWT_KEY }}
 
-      # ── Deploy on homelab ───────────────────────────────────────────────────
-      - name: Load images and run docker compose
+    # ── Deploy on homelab ───────────────────────────────────────────────────
+      - name: Load images and run podman-compose
         run: |
           ssh -i ~/.ssh/homelab_key \
               -o StrictHostKeyChecking=yes \
@@ -209,23 +209,24 @@ jobs:
           set -e
           cd ~/legendary-cashin
 
-          echo "==> Loading Docker images..."
-          docker load < api-image.tar.gz
-          docker load < ui-image.tar.gz
+          echo "==> Loading Podman images..."
+          podman load < api-image.tar.gz
+          podman load < ui-image.tar.gz
 
           echo "==> Pulling latest Postgres image..."
-          docker pull postgres:16-alpine
+          podman pull docker.io/library/postgres:16-alpine
 
-          echo "==> Deploying with docker compose..."
-          docker compose down --remove-orphans --timeout 30
-          docker compose up -d
+          echo "==> Deploying with podman-compose..."
+          podman-compose down --remove-orphans --timeout 30
+          podman-compose up -d
 
           echo "==> Waiting for all services to become healthy (max 2 minutes)..."
           TIMEOUT=120
           ELAPSED=0
           while [ "$ELAPSED" -lt "$TIMEOUT" ]; do
-            TOTAL=$(docker compose ps -q | wc -l)
-            HEALTHY=$(docker inspect $(docker compose ps -q) \
+            TOTAL=$(podman-compose ps -q | wc -l)
+            # podman inspect mantiene la stessa sintassi per lo State.Health
+            HEALTHY=$(podman inspect $(podman-compose ps -q) \
               --format '{{.State.Health.Status}}' 2>/dev/null \
               | grep -c '^healthy$' || true)
             echo "  Healthy: $HEALTHY / $TOTAL"
@@ -239,7 +240,7 @@ jobs:
 
           if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
             echo "Timed out waiting for healthy services."
-            docker compose ps
+            podman-compose ps
             exit 1
           fi
           ENDSSH
