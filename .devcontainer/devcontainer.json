@@ -1,12 +1,12 @@
 {
   "name": "Legendary Cashin",
 
-  // Extend the project's docker-compose so the Postgres DB is available
+  // Self-contained devcontainer compose with hardcoded development values
   "dockerComposeFile": [
-    "../docker-compose.yml",
     "docker-compose.devcontainer.yml"
   ],
   "service": "devcontainer",
+  "runServices": ["db", "devcontainer"],
   "workspaceFolder": "/workspace",
 
   // Forward the backend, frontend dev server, and the DB

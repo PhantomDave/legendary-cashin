@@ -17,10 +17,10 @@
     >
       <ng-template pTemplate="header">
         <tr>
-          <th>ID</th>
-          <th>ASPSPs (Account Servicing Payment Service Providers)</th>
-          <th>Created</th>
-          <th>Actions</th>
+          <th scope="col">ID</th>
+          <th scope="col">ASPSPs (Account Servicing Payment Service Providers)</th>
+          <th scope="col">Created</th>
+          <th scope="col">Actions</th>
         </tr>
       </ng-template>
 
@@ -100,11 +100,11 @@
     >
       <ng-template pTemplate="header">
         <tr>
-          <th>Bank Name</th>
-          <th>Country</th>
-          <th>Valid Until</th>
-          <th>Created</th>
-          <th>Actions</th>
+          <th scope="col">Bank Name</th>
+          <th scope="col">Country</th>
+          <th scope="col">Valid Until</th>
+          <th scope="col">Created</th>
+          <th scope="col">Actions</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-session>
@@ -121,6 +121,15 @@
               size="small"
               [rounded]="true"
               pTooltip="Sync Data"
+              tooltipPosition="top"
+            />
+            <p-button
+              (onClick)="forceSync(session)"
+              icon="pi pi-lock"
+              severity="warn"
+              size="small"
+              [rounded]="true"
+              pTooltip="Force Sync with SCA"
               tooltipPosition="top"
             />
             <p-button
@@ -158,4 +167,12 @@
     [session]="manualImportSession()"
     (importRequested)="onManualImportRequested($event)"
   ></app-manual-import-dialog>
+
+  <app-force-sync-dialog
+    [visible]="forceSyncDialogVisible()"
+    (visibleChange)="forceSyncDialogVisible.set($event)"
+    [session]="forceSyncSession()"
+    [isLoading]="isLoading()"
+    (forceSyncRequested)="onForceSyncRequested($event)"
+  ></app-force-sync-dialog>
 </div>

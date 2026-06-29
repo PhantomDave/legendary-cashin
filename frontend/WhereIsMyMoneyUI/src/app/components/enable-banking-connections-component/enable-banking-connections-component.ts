@@ -17,6 +17,10 @@ import {
   ManualImportDialogComponent,
   ManualImportRequest,
 } from '../manual-import-dialog-component/manual-import-dialog-component';
+import {
+  ForceSyncDialogComponent,
+  ForceSyncRequest,
+} from '../force-sync-dialog-component/force-sync-dialog-component';
 
 @Component({
   selector: 'app-enable-banking-connections-component',
@@ -32,6 +36,7 @@ import {
     ConfigureAspspDialogComponent,
     ConnectBankDialogComponent,
     ManualImportDialogComponent,
+    ForceSyncDialogComponent,
   ],
   providers: [ConfirmationService],
   templateUrl: './enable-banking-connections-component.html',
@@ -46,6 +51,8 @@ export class EnableBankingConnectionsComponent {
   readonly connectIntegration = signal<EnableBanking | null>(null);
   readonly manualImportDialogVisible = signal(false);
   readonly manualImportSession = signal<EnableBankingBankSession | null>(null);
+  readonly forceSyncDialogVisible = signal(false);
+  readonly forceSyncSession = signal<EnableBankingBankSession | null>(null);
   private readonly importService = inject(ImportService);
   readonly isLoading = this.importService.isLoading;
   readonly error = this.importService.error;
@@ -141,5 +148,35 @@ export class EnableBankingConnectionsComponent {
     resp
       ? this.toast.success('Import started for ' + request.session.aspspName)
       : this.toast.error('Failed Import for ' + request.session.aspspName);
+  }
+
+  forceSync(session: EnableBankingBankSession): void {
+    this.forceSyncSession.set(session);
+    this.forceSyncDialogVisible.set(true);
+  }
+
+  async onForceSyncRequested(request: ForceSyncRequest): Promise<void> {
+    const integration = this.integrations().find((i) => i.id === request.session.integrationId);
+    if (!integration) {
+      this.toast.error('Integration not found');
+      return;
+    }
+
+    // Step 1: Initiate Force Sync OAuth flow
+    const oauthResult = await this.importService.forceSyncWithSca(
+      integration.id,
+      request.session.aspspName,
+      request.session.aspspCountry,
+      request.startDate,
+      request.endDate
+    );
+
+    if (!oauthResult) {
+      this.toast.error('Failed to initiate Force Sync');
+      return;
+    }
+
+    // Redirect to the bank's OAuth login. The server-issued state already keys the callback.
+    globalThis.location.href = oauthResult.url;
   }
 }

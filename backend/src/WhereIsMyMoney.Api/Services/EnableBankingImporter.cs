@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Threading.Channels;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,6 +24,29 @@ public sealed record ImportResult(IReadOnlyList<SessionImportResult> Sessions)
     public int TotalSkipped => Sessions.Sum(s => s.Skipped);
 }
 
+public sealed record ImportJobStatus(
+    Guid JobId,
+    long AccountId,
+    string Trigger,
+    long? SessionId,
+    DateTime? From,
+    DateTime? To,
+    string State,
+    DateTime CreatedAtUtc,
+    DateTime? StartedAtUtc,
+    DateTime? CompletedAtUtc,
+    ImportResult? Result,
+    string? Error);
+
+internal sealed record ImportJob(
+    Guid JobId,
+    long AccountId,
+    string Trigger,
+    long? SessionId,
+    DateTime? From,
+    DateTime? To,
+    DateTime CreatedAtUtc);
+
 // ── Importer ──────────────────────────────────────────────────────────────────
 
 public class EnableBankingImporter(
@@ -30,23 +55,88 @@ public class EnableBankingImporter(
 {
     private readonly ILogger<EnableBankingImporter> _logger = logger;
     private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly Channel<ImportJob> _importQueue = Channel.CreateUnbounded<ImportJob>();
+    private readonly ConcurrentDictionary<Guid, ImportJobStatus> _jobStatuses = new();
+
+    public Guid EnqueueImportRequest(
+        DateTime? from,
+        DateTime? to,
+        long? sessionId,
+        long accountId,
+        string trigger)
+    {
+        Guid jobId = Guid.NewGuid();
+        DateTime now = DateTime.UtcNow;
+        ImportJob job = new(jobId, accountId, trigger, sessionId, from, to, now);
+
+        _jobStatuses[jobId] = new ImportJobStatus(
+            JobId: jobId,
+            AccountId: accountId,
+            Trigger: trigger,
+            SessionId: sessionId,
+            From: from,
+            To: to,
+            State: "Queued",
+            CreatedAtUtc: now,
+            StartedAtUtc: null,
+            CompletedAtUtc: null,
+            Result: null,
+            Error: null);
+
+        if (!_importQueue.Writer.TryWrite(job))
+        {
+            _jobStatuses[jobId] = _jobStatuses[jobId] with
+            {
+                State = "Failed",
+                CompletedAtUtc = DateTime.UtcNow,
+                Error = "Failed to enqueue import job."
+            };
+        }
+
+        return jobId;
+    }
+
+    public ImportJobStatus? GetImportJobStatus(Guid jobId)
+    {
+        return _jobStatuses.TryGetValue(jobId, out ImportJobStatus? status) ? status : null;
+    }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("EnableBankingImporter started.");
 
+        DateTime nextScheduledRun = GetNextScheduledRunUtc(DateTime.UtcNow);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
+                TimeSpan delayUntilScheduledRun = nextScheduledRun - DateTime.UtcNow;
+                if (delayUntilScheduledRun < TimeSpan.Zero)
+                    delayUntilScheduledRun = TimeSpan.Zero;
+
+                Task<bool> waitForQueue = _importQueue.Reader.WaitToReadAsync(stoppingToken).AsTask();
+                Task waitForSchedule = Task.Delay(delayUntilScheduledRun, stoppingToken);
+
+                Task completed = await Task.WhenAny(waitForQueue, waitForSchedule);
+
+                if (completed == waitForQueue && await waitForQueue)
+                {
+                    while (_importQueue.Reader.TryRead(out ImportJob? queuedJob))
+                    {
+                        await ProcessQueuedJobAsync(queuedJob);
+                    }
+
+                    continue;
+                }
+
                 await StartImportRequest();
+                nextScheduledRun = GetNextScheduledRunUtc(DateTime.UtcNow);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during scheduled Enable Banking import");
+                _logger.LogError(ex, "Error during Enable Banking import processing");
             }
-
-            await WaitUntilNextExecutionAsync(stoppingToken);
         }
 
         _logger.LogInformation("EnableBankingImporter stopped.");
@@ -61,8 +151,12 @@ public class EnableBankingImporter(
     /// </summary>
     public async Task<ImportResult> StartImportRequest(
         DateTime? from = null,
-        long? sessionId = null)
+        long? sessionId = null,
+        DateTime? to = null)
     {
+        if (from.HasValue && to.HasValue && from.Value > to.Value)
+            throw new ArgumentException("'from' cannot be after 'to'.", nameof(from));
+
         using IServiceScope scope = _serviceProvider.CreateScope();
         EnableBankingStore ebStore = scope.ServiceProvider.GetRequiredService<EnableBankingStore>();
         TransactionStore txStore = scope.ServiceProvider.GetRequiredService<TransactionStore>();
@@ -85,7 +179,7 @@ public class EnableBankingImporter(
             return new ImportResult([]);
         }
 
-        DateOnly dateTo = DateOnly.FromDateTime(DateTime.UtcNow);
+        DateOnly dateTo = DateOnly.FromDateTime((to ?? DateTime.UtcNow));
         List<SessionImportResult> results = [];
 
         foreach (EnableBankingBankSession session in sessions)
@@ -105,6 +199,16 @@ public class EnableBankingImporter(
                 _logger.LogInformation(
                     "Session {SessionId} has never been imported and no explicit 'from' was provided — skipping",
                     session.Id);
+                continue;
+            }
+
+            if (dateFrom > dateTo)
+            {
+                _logger.LogWarning(
+                    "Skipping session {SessionId} because date range is invalid ({From} > {To})",
+                    session.Id,
+                    dateFrom,
+                    dateTo);
                 continue;
             }
 
@@ -204,17 +308,46 @@ public class EnableBankingImporter(
         return summary;
     }
 
-    private async Task WaitUntilNextExecutionAsync(CancellationToken cancellationToken)
+    private async Task ProcessQueuedJobAsync(ImportJob job)
     {
-        DateTime now = DateTime.UtcNow;
+        _jobStatuses[job.JobId] = _jobStatuses[job.JobId] with
+        {
+            State = "Running",
+            StartedAtUtc = DateTime.UtcNow
+        };
+
+        try
+        {
+            ImportResult result = await StartImportRequest(job.From, job.SessionId, job.To);
+
+            _jobStatuses[job.JobId] = _jobStatuses[job.JobId] with
+            {
+                State = "Completed",
+                CompletedAtUtc = DateTime.UtcNow,
+                Result = result,
+                Error = null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Queued import job {JobId} failed", job.JobId);
+
+            _jobStatuses[job.JobId] = _jobStatuses[job.JobId] with
+            {
+                State = "Failed",
+                CompletedAtUtc = DateTime.UtcNow,
+                Error = ex.Message
+            };
+        }
+    }
+
+    private static DateTime GetNextScheduledRunUtc(DateTime now)
+    {
         // Run daily at approximately 2 AM UTC
         DateTime next2Am = now.Date.AddHours(2);
         if (next2Am <= now)
             next2Am = next2Am.AddDays(1);
 
-        TimeSpan delay = next2Am - now;
-        _logger.LogInformation("Next Enable Banking import in {Hours:F1} hours.", delay.TotalHours);
-
-        await Task.Delay(delay, cancellationToken);
+        return next2Am;
     }
 }
