@@ -7,6 +7,9 @@ namespace WhereIsMyMoney.Api.Services;
 
 public sealed class EnableBankingAuthStateService
 {
+    private const string AuthStatePrefix = "ba_";
+    private const string ForceSyncStatePrefix = "fs_";
+
     private sealed record PendingAuth(
         long IntegrationId,
         long AccountId,
@@ -25,7 +28,7 @@ public sealed class EnableBankingAuthStateService
 
     public string CreateState(long integrationId, long accountId)
     {
-        string state = Guid.NewGuid().ToString();
+        string state = $"{AuthStatePrefix}{Guid.NewGuid()}";
         PendingAuth pending = new(integrationId, accountId);
         string json = JsonSerializer.Serialize(pending);
         _cache.SetString($"auth_state:{state}", json, new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = _ttl });
@@ -34,7 +37,7 @@ public sealed class EnableBankingAuthStateService
 
     public string CreateForceSyncState(long integrationId, long accountId, DateTime startDate, DateTime endDate)
     {
-        string state = Guid.NewGuid().ToString();
+        string state = $"{ForceSyncStatePrefix}{Guid.NewGuid()}";
         PendingAuth pending = new(
             integrationId,
             accountId,
@@ -44,6 +47,11 @@ public sealed class EnableBankingAuthStateService
         string json = JsonSerializer.Serialize(pending);
         _cache.SetString($"auth_state:{state}", json, new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = _ttl });
         return state;
+    }
+
+    public bool IsForceSyncState(string state)
+    {
+        return !string.IsNullOrWhiteSpace(state) && state.StartsWith(ForceSyncStatePrefix, StringComparison.OrdinalIgnoreCase);
     }
 
     public (long IntegrationId, long AccountId)? ConsumeState(string state)

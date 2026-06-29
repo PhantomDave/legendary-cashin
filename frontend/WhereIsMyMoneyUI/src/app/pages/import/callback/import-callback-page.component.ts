@@ -60,7 +60,7 @@ export class ImportCallbackPageComponent implements OnInit {
     const error = params.get('error');
     const code = params.get('code');
     const state = params.get('state');
-    const isForceSync = params.get('force_sync') === 'true';
+    const isForceSync = params.get('force_sync') === 'true' || (!!state && state.startsWith('fs_'));
 
     this.isForceSync.set(isForceSync);
     this.loadingMessage.set(

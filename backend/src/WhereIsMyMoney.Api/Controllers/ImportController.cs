@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using WhereIsMyMoney.Api.Models.EnableBankingModels;
 using WhereIsMyMoney.Api.Services;
@@ -275,7 +274,7 @@ namespace WhereIsMyMoney.Api.Controllers
         [HttpPost("enablebanking/{id:long}/force-sync")]
         public async Task<IActionResult> PostForceSyncAsync(long id, [FromBody] ForceSyncRequest request)
         {
-            string redirectUrl = BuildRedirectUrl(forceSync: true);
+            string redirectUrl = BuildRedirectUrl();
             if (string.IsNullOrWhiteSpace(redirectUrl))
             {
                 return Problem("Enable Banking redirect URL is not configured.", statusCode: 500);
@@ -362,15 +361,13 @@ namespace WhereIsMyMoney.Api.Controllers
             }
         }
 
-        private string BuildRedirectUrl(bool forceSync = false)
+        private string BuildRedirectUrl()
         {
             string redirectUrl = options.Value.RedirectUrl?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(redirectUrl))
                 return string.Empty;
 
-            return forceSync
-                ? QueryHelpers.AddQueryString(redirectUrl, "force_sync", "true")
-                : redirectUrl;
+            return redirectUrl;
         }
     }
     public record StartConfigurationRequest(IReadOnlyList<string> Countries);
