@@ -373,9 +373,7 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
             else
                 amount = Math.Abs(amount);
 
-            DateTime date = DateOnly.TryParse(source.BookingDate ?? source.ValueDate, out DateOnly d)
-                ? d.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)
-                : DateTime.UtcNow;
+            DateTime date = ParseImportedTransactionDate(source);
 
             string description = (source.Description ?? string.Empty).Trim();
             if (description.Length == 0) description = "Enable Banking import";
@@ -423,6 +421,37 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
 
         byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(raw));
         return $"eb-hash:{Convert.ToHexString(hash)[..16]}";
+    }
+
+    private static DateTime ParseImportedTransactionDate(ImportedTransaction source)
+    {
+        string[] candidates =
+        [
+            source.BookingDateTime ?? string.Empty,
+            source.ValueDateTime ?? string.Empty,
+            source.BookingDate ?? string.Empty,
+            source.ValueDate ?? string.Empty,
+        ];
+
+        foreach (string candidate in candidates)
+        {
+            if (string.IsNullOrWhiteSpace(candidate))
+                continue;
+
+            if (DateTimeOffset.TryParse(candidate, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                    out DateTimeOffset dto))
+            {
+                return dto.UtcDateTime;
+            }
+
+            if (DateOnly.TryParse(candidate, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly d))
+            {
+                return d.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            }
+        }
+
+        return DateTime.UtcNow;
     }
 
     private async Task<decimal> SumTransactionsAsync(long accountId, long budgetId, DateTime from, DateTime to)

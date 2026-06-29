@@ -274,7 +274,9 @@ public class EnableBankingImporter(
                             Currency: t.TransactionAmount.Currency,
                             CreditDebitIndicator: t.CreditDebitIndicator,
                             Status: t.Status,
+                            BookingDateTime: t.BookingDateTime,
                             BookingDate: t.BookingDate,
+                            ValueDateTime: t.ValueDateTime,
                             ValueDate: t.ValueDate,
                             Description: t.RemittanceInformation?.FirstOrDefault()
                                          ?? t.CreditorName
