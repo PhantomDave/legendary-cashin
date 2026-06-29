@@ -151,7 +151,8 @@ public class EnableBankingIntegration(
     public async Task<EnableBankingHalTransactions> GetTransactionsAsync(
         string accountUid,
         DateOnly? dateFrom = null,
-        DateOnly? dateTo = null)
+        DateOnly? dateTo = null,
+        string? continuationKey = null)
     {
         await EnsureAuthenticatedAsync();
 
@@ -159,6 +160,8 @@ public class EnableBankingIntegration(
         List<string> query = [];
         if (dateFrom.HasValue) query.Add($"date_from={dateFrom.Value:yyyy-MM-dd}");
         if (dateTo.HasValue) query.Add($"date_to={dateTo.Value:yyyy-MM-dd}");
+        if (!string.IsNullOrWhiteSpace(continuationKey))
+            query.Add($"continuation_key={Uri.EscapeDataString(continuationKey)}");
         if (query.Count > 0) sb.Append('?').Append(string.Join('&', query));
 
         HttpResponseMessage response = await _http.GetAsync(sb.ToString());
