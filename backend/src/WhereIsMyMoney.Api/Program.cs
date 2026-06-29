@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
@@ -15,7 +16,25 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddDataProtection();
+IDataProtectionBuilder dataProtectionBuilder = builder.Services
+    .AddDataProtection()
+    .SetApplicationName("WhereIsMyMoney.Api");
+
+string? configuredKeyRingPath = builder.Configuration["DataProtection:KeyRingPath"];
+string? defaultContainerKeyRingPath = builder.Configuration.GetValue<bool>("DOTNET_RUNNING_IN_CONTAINER")
+    ? "/var/lib/whereismymoney/dataprotection-keys"
+    : null;
+
+string? effectiveKeyRingPath = string.IsNullOrWhiteSpace(configuredKeyRingPath)
+    ? defaultContainerKeyRingPath
+    : configuredKeyRingPath;
+
+if (!string.IsNullOrWhiteSpace(effectiveKeyRingPath))
+{
+    Directory.CreateDirectory(effectiveKeyRingPath);
+    dataProtectionBuilder.PersistKeysToFileSystem(new DirectoryInfo(effectiveKeyRingPath));
+}
+
 builder.Services.AddScoped<AccountStore>();
 builder.Services.AddScoped<EncryptionService>();
 builder.Services.AddScoped<TokenService>();

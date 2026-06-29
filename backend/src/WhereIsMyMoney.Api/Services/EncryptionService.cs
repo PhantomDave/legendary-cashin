@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.DataProtection;
+using System.Security.Cryptography;
 using System.IO.Compression;
 
 namespace WhereIsMyMoney.Api.Services;
@@ -56,6 +57,13 @@ public sealed class EncryptionService
 
             // Decompress to get original plaintext
             return DecompressBytes(compressedData);
+        }
+        catch (CryptographicException ex)
+        {
+            throw new InvalidOperationException(
+                "Failed to decrypt sensitive data because a required Data Protection key is missing. " +
+                "Ensure the API uses a persistent Data Protection key ring and re-save the integration secret if keys were lost.",
+                ex);
         }
         catch (Exception ex)
         {

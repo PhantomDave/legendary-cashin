@@ -27,6 +27,8 @@ services:
         condition: service_healthy
     ports:
       - "5080:5080"
+    volumes:
+      - dataprotection-keys:/var/lib/whereismymoney/dataprotection-keys
     environment:
       ASPNETCORE_URLS: http://0.0.0.0:5080
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
@@ -61,3 +63,4 @@ services:
 
 volumes:
   pgdata:
+  dataprotection-keys:
