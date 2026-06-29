@@ -10,6 +10,10 @@ concurrency:
   group: deploy-homelab
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   deploy:
     name: Build & Deploy
@@ -18,6 +22,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+
+      - name: Set image names
+        shell: bash
+        run: |
+          owner="$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
+          echo "API_IMAGE=ghcr.io/${owner}/legendary-cashin-api:latest" >> "$GITHUB_ENV"
+          echo "UI_IMAGE=ghcr.io/${owner}/legendary-cashin-ui:latest" >> "$GITHUB_ENV"
 
       # ── WireGuard tunnel ────────────────────────────────────────────────────
       - name: Setup WireGuard
@@ -152,21 +163,30 @@ jobs:
           HOMELAB_SSH_HOST: ${{ secrets.HOMELAB_SSH_HOST }}
           HOMELAB_SSH_USER: ${{ secrets.HOMELAB_SSH_USER }}
 
+      - name: Login to GitHub Container Registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
       # ── Build Docker images ─────────────────────────────────────────────────
       - name: Build API image
-        run: docker build -t legendary-cashin-api:latest -f backend/Dockerfile backend/
+        run: docker build -t "$API_IMAGE" -f backend/Dockerfile backend/
 
       - name: Build UI image
-        run: docker build -t legendary-cashin-ui:latest -f frontend/WhereIsMyMoneyUI/Dockerfile frontend/WhereIsMyMoneyUI/
+        run: docker build -t "$UI_IMAGE" -f frontend/WhereIsMyMoneyUI/Dockerfile frontend/WhereIsMyMoneyUI/
 
-      # ── Export images as compressed tarballs ────────────────────────────────
-      - name: Export Docker images
-        run: |
-          docker save legendary-cashin-api:latest | gzip > /tmp/api-image.tar.gz
-          docker save legendary-cashin-ui:latest | gzip > /tmp/ui-image.tar.gz
+      - name: Push API image
+        run: docker push "$API_IMAGE"
 
-      # ── Copy artefacts to homelab ───────────────────────────────────────────
-      - name: Copy images and compose file to homelab
+      - name: Push UI image
+        run: docker push "$UI_IMAGE"
+
+      # ── Copy compose file to homelab ────────────────────────────────────────
+      - name: Copy compose file to homelab
         run: |
           ssh -i ~/.ssh/homelab_key \
               -o ConnectionAttempts=1 \
@@ -178,8 +198,6 @@ jobs:
           scp -i ~/.ssh/homelab_key \
               -o ConnectionAttempts=1 \
               -o ConnectTimeout=10 \
-              /tmp/api-image.tar.gz \
-              /tmp/ui-image.tar.gz \
               docker-compose.yml \
               "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}:~/legendary-cashin/"
         env:
@@ -189,7 +207,7 @@ jobs:
       # ── Write .env on homelab (secrets never exposed in remote command) ─────
       - name: Write production .env on homelab
         run: |
-          printf 'DB_PASSWORD=%s\nJWT_KEY=%s\nENABLE_BANKING_REDIRECT_URL=%s\n' "$DB_PASSWORD" "$JWT_KEY" "$ENABLE_BANKING_REDIRECT_URL" \
+          printf 'DB_PASSWORD=%s\nJWT_KEY=%s\nENABLE_BANKING_REDIRECT_URL=%s\nAPI_IMAGE=%s\nUI_IMAGE=%s\n' "$DB_PASSWORD" "$JWT_KEY" "$ENABLE_BANKING_REDIRECT_URL" "$API_IMAGE" "$UI_IMAGE" \
             | ssh -i ~/.ssh/homelab_key \
                   -o StrictHostKeyChecking=yes \
                   "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
@@ -201,18 +219,31 @@ jobs:
           JWT_KEY: ${{ secrets.JWT_KEY }}
           ENABLE_BANKING_REDIRECT_URL: ${{ secrets.ENABLE_BANKING_REDIRECT_URL }}
 
-      # ── Deploy on homelab ───────────────────────────────────────────────────
-      - name: Load images and run podman-compose
+      - name: Login to GitHub Container Registry on homelab
         run: |
           ssh -i ~/.ssh/homelab_key \
               -o StrictHostKeyChecking=yes \
-              "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" << 'ENDSSH'
+              "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
+              "mkdir -p ~/.config/containers && printf '%s' \"$GITHUB_TOKEN\" | podman login ghcr.io -u \"$GITHUB_ACTOR\" --password-stdin"
+        env:
+          HOMELAB_SSH_USER: ${{ secrets.HOMELAB_SSH_USER }}
+          HOMELAB_SSH_HOST: ${{ secrets.HOMELAB_SSH_HOST }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+
+      # ── Deploy on homelab ───────────────────────────────────────────────────
+      - name: Pull images and run podman-compose
+        run: |
+          ssh -i ~/.ssh/homelab_key \
+              -o StrictHostKeyChecking=yes \
+              "${HOMELAB_SSH_USER}@${HOMELAB_SSH_HOST}" \
+              "API_IMAGE='${API_IMAGE}' UI_IMAGE='${UI_IMAGE}' bash -s" << 'ENDSSH'
           set -e
           cd ~/legendary-cashin
 
-          echo "==> Loading Podman images..."
-          podman load < api-image.tar.gz
-          podman load < ui-image.tar.gz
+          echo "==> Pulling application images from GitHub Container Registry..."
+          podman pull "$API_IMAGE"
+          podman pull "$UI_IMAGE"
 
           echo "==> Pulling latest Postgres image..."
           podman pull docker.io/library/postgres:16-alpine

@@ -1,36 +1,49 @@
-# legendary-cashin
+# Where Is My Money
 
-## CashinService REST API
+A personal finance tracker with automatic bank transaction imports via [Enable Banking](https://enablebanking.com).
 
-The project under `backend/CashinService/CashinService` is now an ASP.NET Core REST API using MVC controllers and generated OpenAPI documentation.
+## Stack
 
-### Endpoints
+| Layer | Tech |
+|---|---|
+| Backend | .NET 10 / ASP.NET Core, EF Core 10, PostgreSQL |
+| Frontend | Angular 22, PrimeNG 21, Tailwind 4, Bun |
+| Auth | JWT (Bearer), stored as cookie on the client |
+| Infra | Docker Compose, GitHub Actions, WireGuard homelab deploy |
 
-- `GET /` - service metadata
-- `GET /health` - health check
-- `GET /cashins` - list submitted cashins
-- `GET /cashins/{id}` - fetch a single cashin by id
-- `POST /cashins` - create a cashin
+## API endpoints
 
-### API documentation
+| Controller | Routes | Notes |
+|---|---|---|
+| Accounts | `POST /accounts`, `POST /authenticate`, `GET /accounts/{id}`, `GET /accounts/{email}` | Registration + login are `[AllowAnonymous]` |
+| Transactions | `GET /transactions`, `POST /transactions`, `PATCH /transactions/{id}`, `DELETE /transactions/{id}` | Paginated list |
+| Recurring | `GET /transactions/recurring`, `POST /transactions/recurring`, `PATCH /transactions/recurring/{id}`, `DELETE /transactions/recurring/{id}` | Auto-materialized by `ScheduledTransactionProcessor` |
+| Budgets | `GET /budgets`, `POST /budgets`, `PATCH /budgets/{id}`, `DELETE /budgets/{id}` | |
+| Categories | `GET /categories`, `POST /categories`, `PATCH /categories/{id}`, `DELETE /categories/{id}` | |
+| Import | `POST /banking/initiate`, `GET /banking/callback`, `POST /banking/sessions`, `GET /banking/transactions`, `POST /banking/force-sync` | Enable Banking OAuth flow |
+| System | `GET /`, `GET /health` | |
 
-- OpenAPI JSON: `GET /openapi/v1.json`
-- Scalar UI: `GET /scalar/v1`
+OpenAPI JSON: `GET /openapi/v1.json` · Scalar UI: `GET /scalar/v1`
 
-### Sample request body
-
-```json
-{
-  "amount": 150.75,
-  "currency": "USD",
-  "reference": "invoice-1001"
-}
-```
-
-### Run locally
+## Local dev setup
 
 ```fish
-cd backend/CashinService/CashinService
-dotnet run
+# 1. Start the database
+docker compose up -d db
+
+# 2. Run the API (port 5080)
+dotnet run --project backend/src/WhereIsMyMoney.Api/WhereIsMyMoney.Api.csproj
+
+# 3. Run the frontend (port 4200)
+cd frontend/WhereIsMyMoneyUI && bun install && bun run start
 ```
 
+A **devcontainer** is provided (`.devcontainer/`) for VS Code, Rider, and WebStorm — ports 5080, 4200, and 5000 are forwarded automatically.
+
+## Enable Banking import
+
+Bank connection uses an OAuth2 browser-redirect flow via the Enable Banking API. See [`AUTO_IMPORT_FLOW.md`](AUTO_IMPORT_FLOW.md) for the full flow diagram and implementation details.
+
+## Developer guide
+
+See [`AGENTS.md`](AGENTS.md) for repo structure, backend/frontend patterns, and integration gotchas.

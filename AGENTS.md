@@ -8,7 +8,7 @@
 ## Repo map (what exists now)
 - `backend/src/WhereIsMyMoney.Api`: ASP.NET Core API (`net10.0`) with EF Core + PostgreSQL + JWT auth.
 - `backend/src/WhereIsMyMoney.Import`: CLI/web hybrid import tool for Enable Banking (external API + browser callback flow).
-- `frontend/WhereIsMyMoneyUI`: Angular 21 + PrimeNG SPA using Bun.
+- `frontend/WhereIsMyMoneyUI`: Angular 22 + PrimeNG SPA using Bun.
 - `docker-compose.yml`: local Postgres (`cashin/cashin_dev_password`) used by API default connection string.
 
 ## Critical runtime flow
@@ -26,6 +26,7 @@
 - Recurring transaction logic uses `RecurringTransactionStore` + `RecurrenceEngine`; follow the same account/budget/category ownership checks used in `TransactionsController` before store calls.
 - Response DTO projection is done with `ToResponse(...)` helpers inside stores.
 - Monetary fields use `decimal(18,2)` in `AppDbContext` model configuration.
+- Sensitive credentials (Enable Banking certificates/keys) are stored encrypted via `EncryptionService`; never persist them as plaintext.
 
 ## Frontend patterns to follow
 - Use app-level services with Angular signals for state/loading/error (`budget.service.ts`, `transaction.service.ts`, `account.service.ts`).
@@ -51,6 +52,7 @@
 - CORS in API currently allows only `http://localhost:4200` with credentials.
 - JWT settings are in `backend/src/WhereIsMyMoney.Api/appsettings.json`; local key is a placeholder and should be overridden per environment.
 - Import tool depends on Enable Banking credentials (`backend/src/WhereIsMyMoney.Import/appsettings.json`) and external tools (ngrok/browser callback).
-- The import flow currently hardcodes an ngrok redirect override in `WhereIsMyMoney.Import/Program.cs`; keep this in mind when debugging auth callbacks.
+- The import flow currently hardcodes an ngrok redirect override in `WhereIsMyMoney.Import/Program.cs`; keep this in mind when debugging auth callbacks. The frontend `ImportCallbackPageComponent` handles the OAuth redirect and hands control back to `ImportService`.
+- See `AUTO_IMPORT_FLOW.md` for the full Enable Banking OAuth flow diagram, session lifecycle, deduplication strategy, and background job scheduling.
 - Route shape note: `accounts/{id:long}` and `accounts/{email}` coexist in `AccountsController`; keep constraints explicit when adding routes.
 

@@ -170,7 +170,7 @@ export class ImportCallbackPageComponent implements OnInit {
   }
 
   goToImport(withSuccess = false): void {
-    const destination = this.isForceSync() ? '/transactions' : '/configuration/import';
+    const destination = this.isForceSync() ? '/transactions/list' : '/configuration/import';
     this.router.navigate([destination], {
       queryParams: withSuccess ? { refreshed: 'true' } : {},
     });

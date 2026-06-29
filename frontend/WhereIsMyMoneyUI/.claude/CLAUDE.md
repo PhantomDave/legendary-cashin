@@ -53,3 +53,10 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Design services around a single responsibility
 - Use the `providedIn: 'root'` option for singleton services
 - Use the `inject()` function instead of constructor injection
+
+## Styling And Theming
+
+- For custom app/layout CSS, prefer semantic PrimeNG tokens that are mode-aware, such as `--p-content-background`, `--p-content-color`, and `--p-content-border-color`.
+- Avoid relying on raw surface scale tokens (for example `--p-surface-0`) for app chrome, because they may not provide the expected dark-mode contrast.
+- When a semantic token is unavailable, use a semantic token with a fallback value, e.g. `var(--p-content-background, var(--p-surface-0))`.
+- Keep dark mode wired through the configured selector and never hard-force light colors with non-reactive global overrides.

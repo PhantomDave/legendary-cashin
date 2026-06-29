@@ -19,7 +19,7 @@ services:
       start_period: 10s
 
   api:
-    image: legendary-cashin-api:latest
+    image: ${API_IMAGE:-ghcr.io/phantomdave/legendary-cashin-api:latest}
     container_name: legendary-cashin-api
     restart: unless-stopped
     depends_on:
@@ -44,7 +44,7 @@ services:
       start_period: 30s
 
   ui:
-    image: legendary-cashin-ui:latest
+    image: ${UI_IMAGE:-ghcr.io/phantomdave/legendary-cashin-ui:latest}
     container_name: legendary-cashin-ui
     restart: unless-stopped
     depends_on:

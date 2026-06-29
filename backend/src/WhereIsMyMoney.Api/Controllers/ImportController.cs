@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using WhereIsMyMoney.Api.Models.EnableBankingModels;
 using WhereIsMyMoney.Api.Services;
@@ -145,7 +146,8 @@ namespace WhereIsMyMoney.Api.Controllers
         [HttpPost("enablebanking/{id:long}/start-bank-auth")]
         public async Task<IActionResult> StartBankAuth(long id, [FromBody] StartBankAuthRequest request)
         {
-            if (string.IsNullOrWhiteSpace(options.Value.RedirectUrl))
+            string redirectUrl = BuildRedirectUrl();
+            if (string.IsNullOrWhiteSpace(redirectUrl))
             {
                 return Problem("Enable Banking redirect URL is not configured.", statusCode: 500);
             }
@@ -163,7 +165,7 @@ namespace WhereIsMyMoney.Api.Controllers
                 StartBankAuthApiResponse result = await enableBanking.StartBankAuthAsync(
                     request.AspspName,
                     request.AspspCountry,
-                    options.Value.RedirectUrl,
+                    redirectUrl,
                     state,
                     maxConsentValidity,
                     psuType);
@@ -244,13 +246,138 @@ namespace WhereIsMyMoney.Api.Controllers
             if (session is null || session.AccountId != accountId)
                 return NotFound();
 
-            ImportResult result = await importer.StartImportRequest(request.From, id);
-            return Ok(result);
+            Guid jobId = importer.EnqueueImportRequest(
+                from: request.From,
+                to: request.To,
+                sessionId: id,
+                accountId: accountId,
+                trigger: "manual-session-import");
+
+            return Accepted(new
+            {
+                message = "Import job queued",
+                jobId,
+                state = "Queued"
+            });
+        }
+
+        [HttpGet("jobs/{jobId:guid}")]
+        public IActionResult GetImportJobStatus(Guid jobId)
+        {
+            long accountId = GetAccountId();
+            ImportJobStatus? status = importer.GetImportJobStatus(jobId);
+            if (status is null || status.AccountId != accountId)
+                return NotFound();
+
+            return Ok(status);
+        }
+
+        [HttpPost("enablebanking/{id:long}/force-sync")]
+        public async Task<IActionResult> PostForceSyncAsync(long id, [FromBody] ForceSyncRequest request)
+        {
+            string redirectUrl = BuildRedirectUrl(forceSync: true);
+            if (string.IsNullOrWhiteSpace(redirectUrl))
+            {
+                return Problem("Enable Banking redirect URL is not configured.", statusCode: 500);
+            }
+
+            long accountId = GetAccountId();
+            EnableBankingIntegration? enableBanking = await store.GetIntegrationById(accountId, id);
+            if (enableBanking is null)
+                return NotFound();
+
+            string state = authStateService.CreateForceSyncState(id, accountId, request.StartDate, request.EndDate);
+            int maxConsentValidity = Math.Max(1, options.Value.MaxConsentValidity);
+            string psuType = string.IsNullOrWhiteSpace(options.Value.PsuType) ? "personal" : options.Value.PsuType;
+
+            try
+            {
+                StartBankAuthApiResponse result = await enableBanking.StartBankAuthAsync(
+                    request.AspspName,
+                    request.AspspCountry,
+                    redirectUrl,
+                    state,
+                    maxConsentValidity,
+                    psuType);
+                return Ok(new { url = result.Url, authorizationId = result.AuthorizationId, state });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [HttpPost("enablebanking/complete-force-sync")]
+        public async Task<IActionResult> PostCompleteForceSyncAsync([FromBody] CompleteForceSyncRequest request)
+        {
+            long accountId = GetAccountId();
+            (long IntegrationId, long AccountId, DateTime StartDate, DateTime EndDate)? forceSyncData = authStateService.ConsumeForceSyncState(request.State);
+            if (forceSyncData is null)
+                return BadRequest(new { error = "Invalid or expired state. Please start the Force Sync again." });
+            if (forceSyncData.Value.AccountId != accountId)
+                return Forbid();
+
+            EnableBankingIntegration? enableBanking = await store.GetIntegrationById(accountId, forceSyncData.Value.IntegrationId);
+            if (enableBanking is null)
+                return NotFound();
+
+            try
+            {
+                AuthorizeSessionApiResponse session = await enableBanking.AuthorizeSessionAsync(request.Code);
+
+                IEnumerable<string> accountUids = session.Accounts
+                    .Where(a => a.Uid is not null)
+                    .Select(a => a.Uid!);
+
+                EnableBankingBankSession bankSession = new()
+                {
+                    IntegrationId = forceSyncData.Value.IntegrationId,
+                    AccountId = accountId,
+                    SessionId = session.SessionId,
+                    AspspName = session.Aspsp.Name,
+                    AspspCountry = session.Aspsp.Country,
+                    ValidUntil = session.Access.ValidUntil,
+                    AccountsJson = System.Text.Json.JsonSerializer.Serialize(accountUids),
+                };
+
+                EnableBankingBankSession createdSession = await store.CreateBankSessionAsync(bankSession);
+                Guid jobId = importer.EnqueueImportRequest(
+                    from: forceSyncData.Value.StartDate,
+                    to: forceSyncData.Value.EndDate,
+                    sessionId: createdSession.Id,
+                    accountId: accountId,
+                    trigger: "force-sync");
+
+                return Accepted(new
+                {
+                    message = "Force Sync authorized successfully. Import queued.",
+                    sessionId = createdSession.Id,
+                    jobId,
+                    state = "Queued"
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        private string BuildRedirectUrl(bool forceSync = false)
+        {
+            string redirectUrl = options.Value.RedirectUrl?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(redirectUrl))
+                return string.Empty;
+
+            return forceSync
+                ? QueryHelpers.AddQueryString(redirectUrl, "force_sync", "true")
+                : redirectUrl;
         }
     }
     public record StartConfigurationRequest(IReadOnlyList<string> Countries);
     public record ConfigureAspspsRequest(IReadOnlyList<string> SelectedAspsps, IReadOnlyList<string> SelectedCountries);
     public record StartBankAuthRequest(string AspspName, string AspspCountry);
     public record CompleteBankAuthRequest(string Code, string State);
-    public record StartBankSessionImportRequest(DateTime? From);
+    public record StartBankSessionImportRequest(DateTime? From, DateTime? To);
+    public record ForceSyncRequest(string AspspName, string AspspCountry, DateTime StartDate, DateTime EndDate);
+    public record CompleteForceSyncRequest(string Code, string State);
 }
