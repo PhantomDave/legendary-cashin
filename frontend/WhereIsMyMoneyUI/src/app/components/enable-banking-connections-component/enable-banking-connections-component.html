@@ -124,6 +124,15 @@
               tooltipPosition="top"
             />
             <p-button
+              (onClick)="forceSync(session)"
+              icon="pi pi-lock"
+              severity="warning"
+              size="small"
+              [rounded]="true"
+              pTooltip="Force Sync with SCA"
+              tooltipPosition="top"
+            />
+            <p-button
               (onClick)="disconnectSession($event, session)"
               icon="pi pi-times"
               severity="danger"
@@ -158,4 +167,12 @@
     [session]="manualImportSession()"
     (importRequested)="onManualImportRequested($event)"
   ></app-manual-import-dialog>
+
+  <app-force-sync-dialog-component
+    [visible]="forceSyncDialogVisible()"
+    (visibleChange)="forceSyncDialogVisible.set($event)"
+    [session]="forceSyncSession()"
+    [isLoading]="isLoading()"
+    (forceSyncRequested)="onForceSyncRequested($event)"
+  ></app-force-sync-dialog-component>
 </div>

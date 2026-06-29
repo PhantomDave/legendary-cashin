@@ -1,0 +1,88 @@
+<p-dialog
+  [visible]="visible()"
+  (visibleChange)="visibleChange.emit($event)"
+  header="Force Sync with SCA"
+  [modal]="true"
+  [style]="{ width: '480px' }"
+  (onHide)="onHide()"
+  [blockScroll]="true"
+>
+  <div class="flex flex-col gap-4 py-2">
+    <!-- Session Info -->
+    <div class="bg-blue-50 border border-blue-200 rounded p-3">
+      <p class="text-sm font-medium text-blue-900">Bank: {{ session()?.aspspName }}</p>
+      <p class="text-sm text-blue-800">Country: {{ session()?.aspspCountry }}</p>
+      <p class="text-sm text-blue-700">Last synced: {{ formatLastSync }}</p>
+    </div>
+
+    <!-- SCA Warning -->
+    <div class="bg-amber-50 border border-amber-200 rounded p-3">
+      <p class="text-sm font-medium text-amber-900">
+        <i class="pi pi-exclamation-triangle mr-2"></i>
+        Strong Customer Authentication
+      </p>
+      <p class="text-xs text-amber-800 mt-2">
+        You will be redirected to your bank's secure login to authenticate. This proves active presence and
+        allows an additional data refresh outside the daily background sync quota.
+      </p>
+    </div>
+
+    <!-- Date Range Selection -->
+    <div class="flex flex-col gap-3">
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-gray-700" for="syncFrom">Sync from</label>
+        <p-datepicker
+          inputId="syncFrom"
+          [(ngModel)]="selectedStartDate"
+          [showTime]="true"
+          [showSeconds]="false"
+          [showIcon]="true"
+          [maxDate]="today"
+          dateFormat="dd/mm/yy"
+          placeholder="Select start date"
+          appendTo="body"
+          [style]="{ width: '100%' }"
+        ></p-datepicker>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium text-gray-700" for="syncTo">Sync to</label>
+        <p-datepicker
+          inputId="syncTo"
+          [(ngModel)]="selectedEndDate"
+          [showTime]="true"
+          [showSeconds]="false"
+          [showIcon]="true"
+          [maxDate]="today"
+          dateFormat="dd/mm/yy"
+          placeholder="Select end date"
+          appendTo="body"
+          [style]="{ width: '100%' }"
+        ></p-datepicker>
+      </div>
+
+      <p class="text-xs text-gray-500">
+        {{ selectedStartDate && selectedEndDate ? 'Range: ' + (selectedStartDate | date: 'short') + ' to ' + (selectedEndDate | date: 'short') : 'Select both dates' }}
+      </p>
+    </div>
+  </div>
+
+  <ng-template #footer>
+    <div class="flex justify-end gap-2">
+      <p-button
+        label="Cancel"
+        icon="pi pi-times"
+        severity="secondary"
+        (onClick)="cancel()"
+        [disabled]="isLoading()"
+      ></p-button>
+      <p-button
+        label="Authenticate & Sync"
+        icon="pi pi-lock"
+        [loading]="isLoading()"
+        [disabled]="!isFormValid || isLoading()"
+        (onClick)="confirm()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

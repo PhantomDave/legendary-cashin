@@ -1,11 +1,27 @@
 services:
+    db:
+        image: postgres:16-alpine
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: cashin
+            POSTGRES_USER: cashin
+            POSTGRES_PASSWORD: cashin_dev_password
+        volumes:
+            - pgdata:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U cashin -d cashin"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+
     devcontainer:
         build:
-            context: .
+            context: ..
             dockerfile: .devcontainer/Dockerfile
         volumes:
             # Mount the whole repo into the container
-            - .:/workspace:cached
+            - ..:/workspace:cached
             # Persist NuGet & Bun caches across rebuilds
             - nuget-cache:/root/.nuget
             - bun-cache:/root/.bun
@@ -16,6 +32,8 @@ services:
             ASPNETCORE_ENVIRONMENT: Development
             ConnectionStrings__DefaultConnection: >-
                 Host=db;Port=5432;Database=cashin;Username=cashin;Password=cashin_dev_password
+            ENABLE_BANKING_REDIRECT_URL: http://localhost:5080/api/banking/redirect
+            DB_PASSWORD: placeholder
         depends_on:
             db:
                 condition: service_healthy
@@ -26,5 +44,6 @@ services:
             - seccomp:unconfined
 
 volumes:
+    pgdata:
     nuget-cache:
     bun-cache:
