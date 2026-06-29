@@ -4,55 +4,66 @@ import {ActivatedRoute, convertToParamMap, Router} from '@angular/router';
 import {vi} from 'vitest';
 import {ImportCallbackPageComponent} from './import-callback-page.component';
 import {ImportService} from '../../../services/import.service';
+import {ToastService} from '../../../services/toast.service';
 
-describe('ImportCallbackPageComponent', () => {
-  function setup(options: {
-    queryParams: Record<string, string>;
-    completeBankAuthResult?: boolean;
-    importError?: string | null;
-  }) {
-    const completeBankAuthCalls: Array<[string, string]> = [];
-    const completeBankAuth = async (code: string, state: string): Promise<boolean> => {
-      completeBankAuthCalls.push([code, state]);
-      return options.completeBankAuthResult ?? true;
-    };
+type SetupOptions = {
+  queryParams: Record<string, string>;
+  completeBankAuthResult?: boolean;
+  importError?: string | null;
+};
 
-    const importServiceMock = {
-      completeBankAuth,
-      error: signal<string | null>(options.importError ?? null),
-    } as Pick<ImportService, 'completeBankAuth' | 'error'>;
+function setup(options: SetupOptions) {
+  const completeBankAuthCalls: Array<[string, string]> = [];
+  const completeBankAuth = async (code: string, state: string): Promise<boolean> => {
+    completeBankAuthCalls.push([code, state]);
+    return options.completeBankAuthResult ?? true;
+  };
 
-    const navigateCalls: Array<[string[], Record<string, unknown>]> = [];
-    const navigate = async (
-      commands: string[],
-      extras: Record<string, unknown>,
-    ): Promise<boolean> => {
-      navigateCalls.push([commands, extras]);
-      return true;
-    };
-    const routerMock = { navigate } as Pick<Router, 'navigate'>;
+  const importServiceMock = {
+    completeBankAuth,
+    error: signal<string | null>(options.importError ?? null),
+  } as Pick<ImportService, 'completeBankAuth' | 'error'>;
 
-    TestBed.configureTestingModule({
-      imports: [ImportCallbackPageComponent],
-      providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            snapshot: {
-              queryParamMap: convertToParamMap(options.queryParams),
-            },
+  const navigateCalls: Array<[string[], Record<string, unknown>]> = [];
+  const navigate = async (
+    commands: string[],
+    extras: Record<string, unknown>,
+  ): Promise<boolean> => {
+    navigateCalls.push([commands, extras]);
+    return true;
+  };
+  const routerMock = { navigate } as Pick<Router, 'navigate'>;
+  const toastServiceMock = {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+  } as Pick<ToastService, 'success' | 'error' | 'info' | 'warn'>;
+
+  TestBed.configureTestingModule({
+    imports: [ImportCallbackPageComponent],
+    providers: [
+      {
+        provide: ActivatedRoute,
+        useValue: {
+          snapshot: {
+            queryParamMap: convertToParamMap(options.queryParams),
           },
         },
-        { provide: ImportService, useValue: importServiceMock },
-        { provide: Router, useValue: routerMock },
-      ],
-    });
+      },
+      { provide: ImportService, useValue: importServiceMock },
+      { provide: Router, useValue: routerMock },
+      { provide: ToastService, useValue: toastServiceMock },
+    ],
+  });
 
-    const fixture = TestBed.createComponent(ImportCallbackPageComponent);
-    const component = fixture.componentInstance;
+  const fixture = TestBed.createComponent(ImportCallbackPageComponent);
+  const component = fixture.componentInstance;
 
-    return { fixture, component, completeBankAuthCalls, navigateCalls };
-  }
+  return { fixture, component, completeBankAuthCalls, navigateCalls };
+}
+
+describe('ImportCallbackPageComponent', () => {
 
   it('shows provider error when error query param exists', async () => {
     const { fixture, component, completeBankAuthCalls } = setup({
@@ -104,7 +115,7 @@ describe('ImportCallbackPageComponent', () => {
     vi.useRealTimers();
 
     expect(navigateCalls).toEqual([
-      [['/configuration/import'], { queryParams: { bankConnected: 'true' } }],
+      [['/configuration/import'], { queryParams: { refreshed: 'true' } }],
     ]);
   });
 

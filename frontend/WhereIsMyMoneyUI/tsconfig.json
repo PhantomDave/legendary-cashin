@@ -23,7 +23,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "useUnknownInCatchVariables": true,
-    "noStrictGenericChecks": false,
 
     /* Module Resolution */
     "skipLibCheck": true,
