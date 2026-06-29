@@ -28,6 +28,7 @@ import { Category } from '../../models/category/Category';
 import { ConfirmationService } from 'primeng/api';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialog } from 'primeng/confirmdialog';
+import { TooltipModule } from 'primeng/tooltip';
 
 interface EditValues {
   date: Date;
@@ -54,6 +55,7 @@ interface EditValues {
     SelectModule,
     MultiSelectModule,
     ConfirmDialog,
+    TooltipModule,
   ],
   providers: [ConfirmationService],
   templateUrl: './transactions-page.component.html',

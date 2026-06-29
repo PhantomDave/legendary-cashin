@@ -70,7 +70,15 @@
           (onDeactivate)="cancelEdit(item.id)"
           [closable]="false"
         >
-          <ng-template #display>{{ resolveBudgetName(item.budgetId) }}</ng-template>
+          <ng-template #display>
+            <span
+              class="table-truncate table-truncate--budget"
+              [pTooltip]="resolveBudgetName(item.budgetId)"
+              tooltipPosition="top"
+            >
+              {{ resolveBudgetName(item.budgetId) }}
+            </span>
+          </ng-template>
           <ng-template #content>
             <div class="inline-edit-cell">
               <p-select
@@ -108,7 +116,15 @@
           (onDeactivate)="cancelEdit(item.id)"
           [closable]="false"
         >
-          <ng-template #display>{{ resolveCategoryNames(item.categoryIds) }}</ng-template>
+          <ng-template #display>
+            <span
+              class="table-truncate table-truncate--categories"
+              [pTooltip]="resolveCategoryNames(item.categoryIds)"
+              tooltipPosition="top"
+            >
+              {{ resolveCategoryNames(item.categoryIds) }}
+            </span>
+          </ng-template>
           <ng-template #content>
             <div class="inline-edit-cell">
               <p-multiselect
@@ -146,7 +162,15 @@
           (onDeactivate)="cancelEdit(item.id)"
           [closable]="false"
         >
-          <ng-template #display>{{ item.description }}</ng-template>
+          <ng-template #display>
+            <span
+              class="table-truncate table-truncate--description"
+              [pTooltip]="item.description"
+              tooltipPosition="top"
+            >
+              {{ item.description }}
+            </span>
+          </ng-template>
           <ng-template #content>
             <div class="inline-edit-cell">
               <input

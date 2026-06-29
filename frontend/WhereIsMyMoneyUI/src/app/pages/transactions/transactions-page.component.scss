@@ -7,3 +7,23 @@
   align-items: center;
   gap: 0.5rem;
 }
+
+.table-truncate {
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.table-truncate--budget {
+  max-width: 12rem;
+}
+
+.table-truncate--categories {
+  max-width: 16rem;
+}
+
+.table-truncate--description {
+  max-width: 20rem;
+}
