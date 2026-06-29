@@ -65,11 +65,11 @@ export class ForceSyncDialogComponent {
     );
   }
 
-  get formatLastSync(): string {
+  get formatConnectedAt(): string {
     const session = this.session();
-    if (!session || !session.lastImportAtUtc) {
+    if (!session) {
       return 'Never';
     }
-    return new Date(session.lastImportAtUtc).toLocaleString();
+    return new Date(session.createdAtUtc).toLocaleString();
   }
 }

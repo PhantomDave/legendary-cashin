@@ -176,17 +176,7 @@ export class EnableBankingConnectionsComponent {
       return;
     }
 
-    // Step 2: Store OAuth info in session storage for callback handler
-    sessionStorage.setItem(
-      'forceSyncOAuthState',
-      JSON.stringify({
-        state: oauthResult.state,
-        startDate: request.startDate,
-        endDate: request.endDate,
-      })
-    );
-
-    // Step 3: Redirect to bank's OAuth login
+    // Redirect to the bank's OAuth login. The server-issued state already keys the callback.
     globalThis.location.href = oauthResult.url;
   }
 }
