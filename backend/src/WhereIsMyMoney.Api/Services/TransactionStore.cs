@@ -4,12 +4,14 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using WhereIsMyMoney.Api.Data;
 using WhereIsMyMoney.Api.Models;
+using WhereIsMyMoney.Api.Models.CategoryModels;
 using WhereIsMyMoney.Api.Models.EnableBankingModels;
+using WhereIsMyMoney.Api.Models.RuleModels;
 using WhereIsMyMoney.Api.Models.TransactionModels;
 
 namespace WhereIsMyMoney.Api.Services;
 
-public sealed class TransactionStore(AppDbContext db) : IStore<TransactionResponse, CreateTransactionRequest, UpdateTransactionRequest>
+public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : IStore<TransactionResponse, CreateTransactionRequest, UpdateTransactionRequest>
 {
     public Task<bool> BudgetBelongsToAccountAsync(long budgetId, long accountId)
     {
@@ -155,6 +157,20 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
                     .Where(c => value.CategoryIds.Contains(c.Id) && c.AccountId == value.AccountId)
                     .ToListAsync()
         };
+
+        int[] ruleCategories = await ruleStore.GetMatchedCategoryIdsAsync(transaction, value.AccountId);
+        if (ruleCategories.Length > 0)
+        {
+            HashSet<int> existing = transaction.Categories.Select(c => c.Id).ToHashSet();
+            int[] toAdd = ruleCategories.Where(id => !existing.Contains(id)).ToArray();
+            if (toAdd.Length > 0)
+            {
+                List<Category> extra = await db.Categories
+                    .Where(c => c.AccountId == value.AccountId && toAdd.Contains(c.Id))
+                    .ToListAsync();
+                foreach (Category c in extra) transaction.Categories.Add(c);
+            }
+        }
 
         db.Transactions.Add(transaction);
         await db.SaveChangesAsync();
@@ -355,6 +371,9 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
             .ToListAsync())
             .ToHashSet();
 
+        // Load active rules once for the entire batch.
+        IReadOnlyList<Rule> activeRules = await ruleStore.GetActiveRulesByAccountIdAsync(accountId);
+
         int inserted = 0;
         int skipped = 0;
 
@@ -379,7 +398,7 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
             if (description.Length == 0) description = "Enable Banking import";
             if (description.Length > 256) description = description[..256];
 
-            db.Transactions.Add(new Transaction
+            Transaction tx = new Transaction
             {
                 AccountId = source.OwnerAccountId,
                 BudgetId = budgetId,
@@ -387,7 +406,21 @@ public sealed class TransactionStore(AppDbContext db) : IStore<TransactionRespon
                 Amount = amount,
                 Date = date,
                 ExternalRef = externalRef,
-            });
+            };
+
+            // Apply rules to auto-categorize the imported transaction.
+            if (activeRules.Count > 0)
+            {
+                int[] matchedCategoryIds = ruleStore.GetMatchedCategoryIds(activeRules, tx);
+                if (matchedCategoryIds.Length > 0)
+                {
+                    tx.Categories = await db.Categories
+                        .Where(c => c.AccountId == accountId && matchedCategoryIds.Contains(c.Id))
+                        .ToListAsync();
+                }
+            }
+
+            db.Transactions.Add(tx);
 
             // Track locally so within-batch dupes are also caught without a second DB trip.
             existingRefs.Add(externalRef);

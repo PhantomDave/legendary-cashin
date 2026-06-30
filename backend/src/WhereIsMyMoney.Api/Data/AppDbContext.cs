@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WhereIsMyMoney.Api.Models.CategoryModels;
 using WhereIsMyMoney.Api.Models.EnableBankingModels;
+using WhereIsMyMoney.Api.Models.RuleModels;
 using WhereIsMyMoney.Api.Models.TransactionModels;
 
 namespace WhereIsMyMoney.Api.Data;
@@ -14,6 +15,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<RecurringTransaction> RecurringTransactions => Set<RecurringTransaction>();
     public DbSet<EnableBanking> EnableBanking => Set<EnableBanking>();
     public DbSet<EnableBankingBankSession> EnableBankingSessions => Set<EnableBankingBankSession>();
+    public DbSet<Rule> Rules => Set<Rule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -123,6 +125,26 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                   .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(e => e.AccountId);
             entity.HasIndex(e => e.IntegrationId);
+        });
+
+        modelBuilder.Entity<Rule>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(256);
+            entity.Property(e => e.DescriptionPattern).HasMaxLength(512);
+            entity.Property(e => e.MinAmount).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.MaxAmount).HasColumnType("decimal(18,2)");
+            entity.HasOne<Account>()
+                  .WithMany()
+                  .HasForeignKey(e => e.AccountId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<Budget>()
+                  .WithMany()
+                  .HasForeignKey(e => e.BudgetId)
+                  .OnDelete(DeleteBehavior.SetNull)
+                  .IsRequired(false);
+            entity.HasIndex(e => new { e.AccountId, e.IsActive, e.Priority })
+                  .HasDatabaseName("IX_Rules_AccountId_IsActive_Priority");
         });
     }
 }

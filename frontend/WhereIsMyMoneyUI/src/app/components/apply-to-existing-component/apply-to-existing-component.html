@@ -1,0 +1,50 @@
+<p-dialog
+  [(visible)]="visible"
+  [closeOnEscape]="true"
+  [draggable]="false"
+  [modal]="true"
+  header="Apply Rules to Existing Transactions"
+  style="width: 480px"
+>
+  <ng-template #content>
+    <form (ngSubmit)="onApply()" [formGroup]="form" class="flex flex-col gap-4">
+      <div class="flex flex-col gap-1">
+        <label for="apply-date-range">Date Range *</label>
+        <p-datepicker
+          formControlName="dateRange"
+          selectionMode="range"
+          inputId="apply-date-range"
+          [showIcon]="true"
+          [showButtonBar]="true"
+          placeholder="Select date range"
+          aria-label="Date range"
+          styleClass="w-full"
+        />
+        @if (form.get('dateRange')?.invalid && form.get('dateRange')?.touched) {
+          <small class="text-red-500">Date range is required.</small>
+        }
+      </div>
+
+      <div class="flex items-center gap-2">
+        <p-checkbox formControlName="overwriteExisting" [binary]="true" inputId="apply-overwrite" aria-label="Overwrite existing categories" />
+        <label for="apply-overwrite">Overwrite existing categories</label>
+      </div>
+
+      @if (previewLoaded()) {
+        <div class="p-3 rounded" style="background: var(--p-content-background); border: 1px solid var(--p-content-border-color)">
+          @if (previewCount() === 0) {
+            <p class="text-sm">No transactions would be affected.</p>
+          } @else {
+            <p class="text-sm">Would apply rules to <strong>{{ previewCount() }}</strong> transaction(s).</p>
+          }
+        </div>
+      }
+    </form>
+  </ng-template>
+
+  <ng-template #footer>
+    <p-button (onClick)="visible.set(false)" label="Cancel" severity="secondary" />
+    <p-button (onClick)="onPreview()" [loading]="isLoading()" label="Preview" severity="info" />
+    <p-button (onClick)="onApply()" [loading]="isLoading()" label="Apply" />
+  </ng-template>
+</p-dialog>

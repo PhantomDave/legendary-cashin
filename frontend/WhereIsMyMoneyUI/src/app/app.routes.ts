@@ -10,6 +10,7 @@ import { NotFoundPageComponent } from './pages/not-found/not-found-page.componen
 import { ScheduledPageComponent } from './pages/scheduled/scheduled-page-component';
 import { ImportPageComponent } from './pages/import/import-page-component';
 import { ImportCallbackPageComponent } from './pages/import/callback/import-callback-page.component';
+import { RulesPageComponent } from './pages/rules/rules-page.component';
 
 export const routes: Routes = [
   {
@@ -49,6 +50,10 @@ export const routes: Routes = [
           {
             path: 'import',
             component: ImportPageComponent,
+          },
+          {
+            path: 'rules',
+            component: RulesPageComponent,
           },
         ],
       },

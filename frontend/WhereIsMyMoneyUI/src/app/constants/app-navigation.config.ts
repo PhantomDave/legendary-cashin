@@ -45,6 +45,11 @@ export const APP_NAVIGATION_ITEMS: MenuItem[] = [
         icon: 'pi pi-file-import',
         routerLink: 'configuration/import',
       },
+      {
+        label: 'Rules',
+        icon: 'pi pi-sliders-v',
+        routerLink: 'configuration/rules',
+      },
     ],
   },
 ];

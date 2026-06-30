@@ -1,0 +1,135 @@
+<app-section-header
+  (ctaClicked)="openCreate()"
+  ctaText="Add Rule"
+  subtitle="Automatically assign categories to transactions based on configurable rules."
+  title="Rules"
+/>
+
+<div class="flex justify-end mb-3">
+  <p-button (onClick)="openApply()" label="Apply to Existing" icon="pi pi-history" severity="secondary" />
+</div>
+
+<p-table
+  [value]="rules()?.items ?? []"
+  [loading]="isLoading()"
+  [reorderableRows]="true"
+  (onRowReorder)="onRowReorder($event)"
+  dataKey="id"
+  size="small"
+  [showGridlines]="true"
+  styleClass="p-datatable-sm"
+>
+  <ng-template #header>
+    <tr>
+      <th style="width: 3rem"></th>
+      <th>Priority</th>
+      <th>Name</th>
+      <th>Match Type</th>
+      <th>Pattern</th>
+      <th>Amount Range</th>
+      <th>Budget</th>
+      <th>Categories</th>
+      <th>Active</th>
+      <th>Actions</th>
+    </tr>
+  </ng-template>
+
+  <ng-template #body let-rule let-index="rowIndex">
+    <tr [pReorderableRow]="index">
+      <td>
+        <span class="pi pi-bars" pReorderableRowHandle style="cursor: move"></span>
+      </td>
+      <td>{{ rule.priority }}</td>
+      <td>{{ rule.name }}</td>
+      <td>
+        <p-tag [value]="rule.matchType" severity="info" />
+      </td>
+      <td>
+        <code [pTooltip]="rule.descriptionPattern">{{ rule.descriptionPattern }}</code>
+      </td>
+      <td>{{ formatAmountRange(rule) }}</td>
+      <td>{{ getBudgetName(rule.budgetId) }}</td>
+      <td [pTooltip]="getCategoryNames(rule.categoryIds)">
+        {{ getCategoryNames(rule.categoryIds) }}
+      </td>
+      <td>
+        <p-button
+          (onClick)="toggleActive(rule)"
+          [icon]="rule.isActive ? 'pi pi-check-circle' : 'pi pi-times-circle'"
+          [severity]="rule.isActive ? 'success' : 'secondary'"
+          [text]="true"
+          size="small"
+          [pTooltip]="rule.isActive ? 'Active — click to disable' : 'Inactive — click to enable'"
+          [attr.aria-label]="rule.isActive ? 'Disable rule' : 'Enable rule'"
+        />
+      </td>
+      <td>
+        <div class="flex gap-1">
+          <p-button
+            (onClick)="openEdit(rule)"
+            icon="pi pi-pencil"
+            severity="secondary"
+            size="small"
+            pTooltip="Edit"
+            aria-label="Edit rule"
+          />
+          <p-button
+            (onClick)="openPreview(rule)"
+            icon="pi pi-eye"
+            severity="info"
+            size="small"
+            pTooltip="Preview matches"
+            aria-label="Preview rule matches"
+          />
+          <p-button
+            (onClick)="confirmDelete($event, rule)"
+            icon="pi pi-trash"
+            severity="danger"
+            size="small"
+            pTooltip="Delete"
+            aria-label="Delete rule"
+          />
+        </div>
+      </td>
+    </tr>
+  </ng-template>
+
+  <ng-template #emptymessage>
+    <tr>
+      <td colspan="10" class="text-center p-4">No rules yet. Click "Add Rule" to create one.</td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-paginator
+  (onPageChange)="onPageChange($event)"
+  [first]="first()"
+  [rows]="rows()"
+  [totalRecords]="rules()?.totalCount ?? 0"
+  [rowsPerPageOptions]="[10, 25, 50]"
+  [showCurrentPageReport]="true"
+  currentPageReportTemplate="Showing {first} to {last} of {totalRecords} rules"
+/>
+
+<p-confirmdialog />
+
+<app-create-rule-component
+  [(visible)]="showCreate"
+  (created)="onRuleCreated($event)"
+/>
+
+<app-edit-rule-component
+  [(visible)]="showEdit"
+  [rule]="selectedRule()"
+  (updated)="onRuleUpdated($event)"
+/>
+
+<app-preview-rule-component
+  [(visible)]="showPreview"
+  [ruleId]="selectedRule()?.id ?? null"
+/>
+
+<app-apply-to-existing-component
+  [(visible)]="showApply"
+  (applied)="onApplied()"
+/>
