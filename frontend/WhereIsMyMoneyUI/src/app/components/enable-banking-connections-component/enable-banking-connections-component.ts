@@ -61,8 +61,8 @@ export class EnableBankingConnectionsComponent {
 
   constructor() {
     effect(() => {
-      this.loadIntegrations();
-      this.loadSessions();
+      this.loadIntegrations().then();
+      this.loadSessions().then();
     });
   }
 
@@ -93,18 +93,6 @@ export class EnableBankingConnectionsComponent {
     });
   }
 
-  getAspsLabel(asps: string | null): string {
-    if (!asps) return 'Not configured';
-    return asps
-      .split(',')
-      .map((asp) => asp.trim())
-      .join(', ');
-  }
-
-  async onConfigurationComplete(): Promise<void> {
-    await this.loadIntegrations();
-  }
-
   connectBank(integration: EnableBanking): void {
     this.connectIntegration.set(integration);
     this.connectDialogVisible.set(true);
@@ -112,10 +100,6 @@ export class EnableBankingConnectionsComponent {
 
   async loadSessions(): Promise<void> {
     this.sessions.set(await this.importService.getBankSessions());
-  }
-
-  async onBankConnected(): Promise<void> {
-    await this.loadSessions();
   }
 
   async disconnectSession(event: Event, session: EnableBankingBankSession): Promise<void> {

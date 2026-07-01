@@ -30,17 +30,35 @@ export class ApplyToExistingComponent {
     overwriteExisting: new FormControl<boolean>(false, { nonNullable: true }),
   });
 
+  private getDateRangeWithInclusiveEnd(): { from: string; to: string } | null {
+    const range = this.form.controls.dateRange.value;
+    if (!range || range.length < 2 || !range[0] || !range[1]) return null;
+    const [from, to] = range;
+    // Add 1 day to end date to include the entire end day (date picker returns midnight of that day)
+    const toInclusive = new Date(to);
+    toInclusive.setDate(toInclusive.getDate() + 1);
+    return {
+      from: from.toISOString(),
+      to: toInclusive.toISOString(),
+    };
+  }
+
+  private resetForm(): void {
+    this.previewCount.set(null);
+    this.previewLoaded.set(false);
+    this.form.reset({ overwriteExisting: false });
+  }
+
   protected async onPreview(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
-    const range = this.form.controls.dateRange.value;
-    if (!range || range.length < 2 || !range[0] || !range[1]) return;
-    const [from, to] = range;
+    const dateRange = this.getDateRangeWithInclusiveEnd();
+    if (!dateRange) return;
     const count = await this.ruleService.countExisting({
-      fromDate: from.toISOString(),
-      toDate: to.toISOString(),
+      fromDate: dateRange.from,
+      toDate: dateRange.to,
       overwriteExisting: this.form.controls.overwriteExisting.value,
     });
     this.previewCount.set(count);
@@ -52,12 +70,11 @@ export class ApplyToExistingComponent {
       this.form.markAllAsTouched();
       return;
     }
-    const range = this.form.controls.dateRange.value;
-    if (!range || range.length < 2 || !range[0] || !range[1]) return;
-    const [from, to] = range;
+    const dateRange = this.getDateRangeWithInclusiveEnd();
+    if (!dateRange) return;
     const updated = await this.ruleService.applyToExisting({
-      fromDate: from.toISOString(),
-      toDate: to.toISOString(),
+      fromDate: dateRange.from,
+      toDate: dateRange.to,
       overwriteExisting: this.form.controls.overwriteExisting.value,
     });
 
@@ -65,15 +82,11 @@ export class ApplyToExistingComponent {
 
     this.toast.success('Rules applied', `Applied rules to ${updated} transaction(s).`);
     this.visible.set(false);
-    this.previewCount.set(null);
-    this.previewLoaded.set(false);
-    this.form.reset({ overwriteExisting: false });
+    this.resetForm();
     this.applied.emit(updated);
   }
 
   protected onHide(): void {
-    this.previewCount.set(null);
-    this.previewLoaded.set(false);
-    this.form.reset({ overwriteExisting: false });
+    this.resetForm();
   }
 }

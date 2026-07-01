@@ -35,31 +35,35 @@ export class PreviewRuleComponent {
   readonly currentPage = signal(1);
   readonly pageSize = signal(10);
 
-  constructor() {
-    effect(() => {
-      const id = this.ruleId();
-      const open = this.visible();
-      if (open && id !== null) {
-        void this.loadPreview(id);
-      } else if (!open) {
-        this.result.set(null);
-        this.currentPage.set(1);
-      }
-    });
-  }
+   constructor() {
+     effect(() => {
+       const open = this.visible();
+       if (!open) {
+         this.result.set(null);
+         this.currentPage.set(1);
+         return;
+       }
 
-  private async loadPreview(ruleId: number): Promise<void> {
-    const data = await this.ruleService.previewRule(ruleId, this.currentPage(), this.pageSize());
-    this.result.set(data);
-  }
+       const id = this.ruleId();
+       if (id === null) return;
 
-  onPageChange(event: PaginatorState): void {
-    const id = this.ruleId();
-    if (id === null) return;
-    this.currentPage.set(Math.floor((event.first ?? 0) / (event.rows ?? 10)) + 1);
-    this.pageSize.set(event.rows ?? 10);
-    void this.loadPreview(id);
-  }
+       // Read pagination signals to create dependencies for re-loading on pagination changes
+       void this.currentPage();
+       void this.pageSize();
+
+       void this.loadPreview(id);
+     });
+   }
+
+   private async loadPreview(ruleId: number): Promise<void> {
+     const data = await this.ruleService.previewRule(ruleId, this.currentPage(), this.pageSize());
+     this.result.set(data);
+   }
+
+   onPageChange(event: PaginatorState): void {
+     this.currentPage.set(Math.floor((event.first ?? 0) / (event.rows ?? 10)) + 1);
+     this.pageSize.set(event.rows ?? 10);
+   }
 
   getCategoryNames(categoryIds: number[]): string {
     const all = this.categoryService.categories();

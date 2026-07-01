@@ -71,7 +71,6 @@ export class RulesPageComponent {
     this.first.set(event.first ?? 0);
     this.rows.set(event.rows ?? this.rows());
     this.currentPage.set(Math.floor((event.first ?? 0) / (event.rows ?? this.rows())) + 1);
-    void this.loadRules();
   }
 
   openCreate(): void {
@@ -105,25 +104,31 @@ export class RulesPageComponent {
     }
   }
 
-  async onRowReorder(event: TableRowReorderEvent): Promise<void> {
-    const items = this.rules()?.items;
-    if (!items) return;
-    const dragIndex = event.dragIndex;
-    const dropIndex = event.dropIndex;
-    if (dragIndex === undefined || dropIndex === undefined) return;
+   async onRowReorder(event: TableRowReorderEvent): Promise<void> {
+     const items = this.rules()?.items;
+     if (!items) return;
+     const dragIndex = event.dragIndex;
+     const dropIndex = event.dropIndex;
+     if (dragIndex === undefined || dropIndex === undefined) return;
 
-    const reordered = [...items];
-    const [moved] = reordered.splice(dragIndex, 1);
+     const reordered = [...items];
+     const [moved] = reordered.splice(dragIndex, 1);
 
-    if (moved === undefined) return;
+     if (moved === undefined) return;
 
-    reordered.splice(dropIndex, 0, moved);
+     reordered.splice(dropIndex, 0, moved);
 
-    this.rules.update((current) => (current ? { ...current, items: reordered } : current));
+     // Update priority field to reflect new positions (1-indexed)
+     const reorderedWithUpdatedPriority = reordered.map((rule, index) => ({
+       ...rule,
+       priority: index + 1,
+     }));
 
-    const ruleIds = reordered.map((r) => r.id);
-    await this.ruleService.reorderRules(ruleIds);
-  }
+     this.rules.update((current) => (current ? { ...current, items: reorderedWithUpdatedPriority } : current));
+
+     const ruleIds = reorderedWithUpdatedPriority.map((r) => r.id);
+     await this.ruleService.reorderRules(ruleIds);
+   }
 
   onRuleCreated(rule: Rule): void {
     this.rules.update((current) => {
