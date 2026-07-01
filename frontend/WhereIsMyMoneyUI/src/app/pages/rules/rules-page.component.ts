@@ -114,6 +114,9 @@ export class RulesPageComponent {
 
     const reordered = [...items];
     const [moved] = reordered.splice(dragIndex, 1);
+
+    if (moved === undefined) return;
+
     reordered.splice(dropIndex, 0, moved);
 
     this.rules.update((current) => (current ? { ...current, items: reordered } : current));

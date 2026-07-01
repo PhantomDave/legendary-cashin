@@ -9,7 +9,6 @@ import {
 } from '@angular/core';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
-import { PrimeTemplate } from 'primeng/api';
 import { TableModule } from 'primeng/table';
 import { PaginatorModule, PaginatorState } from 'primeng/paginator';
 import { CurrencyPipe, DatePipe } from '@angular/common';
@@ -20,7 +19,7 @@ import { CategoryService } from '../../services/category.service';
 
 @Component({
   selector: 'app-preview-rule-component',
-  imports: [Button, Dialog, PrimeTemplate, TableModule, PaginatorModule, CurrencyPipe, DatePipe],
+  imports: [Button, Dialog, TableModule, PaginatorModule, CurrencyPipe, DatePipe],
   templateUrl: './preview-rule-component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

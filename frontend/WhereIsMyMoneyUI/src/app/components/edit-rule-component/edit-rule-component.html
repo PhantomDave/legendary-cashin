@@ -1,4 +1,5 @@
 <p-dialog
+  (onShow)="onShow()"
   [(visible)]="visible"
   [closeOnEscape]="true"
   [draggable]="false"
@@ -11,7 +12,13 @@
       <!-- Name -->
       <div class="flex flex-col gap-1">
         <label for="edit-rule-name">Rule Name *</label>
-        <input id="edit-rule-name" formControlName="name" pInputText aria-label="Rule name" />
+        <input
+          id="edit-rule-name"
+          #editNameInput
+          formControlName="name"
+          pInputText
+          aria-label="Rule name"
+        />
         @if (isInvalid('name')) {
           <small class="text-red-500">Name is required.</small>
         }
@@ -20,12 +27,22 @@
       <!-- Active + Priority -->
       <div class="flex gap-4 items-center">
         <div class="flex items-center gap-2">
-          <p-checkbox formControlName="isActive" [binary]="true" inputId="edit-rule-active" aria-label="Rule active" />
+          <p-checkbox
+            formControlName="isActive"
+            [binary]="true"
+            inputId="edit-rule-active"
+            aria-label="Rule active"
+          />
           <label for="edit-rule-active">Active</label>
         </div>
         <div class="flex flex-col gap-1 flex-1">
           <label for="edit-rule-priority">Priority</label>
-          <p-inputnumber formControlName="priority" inputId="edit-rule-priority" [min]="1" aria-label="Priority" />
+          <p-inputnumber
+            formControlName="priority"
+            inputId="edit-rule-priority"
+            [min]="1"
+            aria-label="Priority"
+          />
         </div>
       </div>
 
@@ -35,6 +52,7 @@
         <p-select
           formControlName="matchType"
           [options]="matchTypeOptions"
+          [appendTo]="'body'"
           inputId="edit-rule-match-type"
           aria-label="Match type"
         />
@@ -42,13 +60,23 @@
 
       <!-- Description Pattern -->
       <div class="flex flex-col gap-1">
-        <label for="edit-rule-pattern">Description Pattern *</label>
-        <input id="edit-rule-pattern" formControlName="descriptionPattern" pInputText aria-label="Description pattern" />
+        <label for="edit-rule-pattern">Description Patterns *</label>
+        <textarea
+          id="edit-rule-pattern"
+          formControlName="descriptionPattern"
+          rows="4"
+          class="p-inputtext p-component w-full"
+          aria-label="Description patterns"
+          placeholder="One pattern per line"
+        ></textarea>
         @if (isInvalid('descriptionPattern')) {
-          <small class="text-red-500">Pattern is required.</small>
+          <small class="text-red-500">At least one pattern is required.</small>
         }
-        @if (ruleService.error()) {
-          <small class="text-red-500">{{ ruleService.error() }}</small>
+        <small class="text-color-secondary"
+          >Use one pattern per line. A rule matches if any pattern matches.</small
+        >
+        @if (error()) {
+          <small class="text-red-500">{{ error() }}</small>
         }
       </div>
 
@@ -56,11 +84,25 @@
       <div class="flex gap-4">
         <div class="flex flex-col gap-1 flex-1">
           <label for="edit-rule-min-amount">Min Amount</label>
-          <p-inputnumber formControlName="minAmount" inputId="edit-rule-min-amount" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" aria-label="Minimum amount" />
+          <p-inputnumber
+            formControlName="minAmount"
+            inputId="edit-rule-min-amount"
+            mode="decimal"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            aria-label="Minimum amount"
+          />
         </div>
         <div class="flex flex-col gap-1 flex-1">
           <label for="edit-rule-max-amount">Max Amount</label>
-          <p-inputnumber formControlName="maxAmount" inputId="edit-rule-max-amount" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" aria-label="Maximum amount" />
+          <p-inputnumber
+            formControlName="maxAmount"
+            inputId="edit-rule-max-amount"
+            mode="decimal"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            aria-label="Maximum amount"
+          />
         </div>
       </div>
 
@@ -71,6 +113,7 @@
           formControlName="budgetId"
           [options]="budgetOptions()"
           [showClear]="true"
+          [appendTo]="'body'"
           inputId="edit-rule-budget"
           placeholder="Any budget"
           aria-label="Budget filter"
@@ -83,6 +126,7 @@
         <p-multiselect
           formControlName="daysOfWeek"
           [options]="dayOfWeekOptions"
+          [appendTo]="'body'"
           inputId="edit-rule-days-of-week"
           placeholder="Any day"
           aria-label="Days of week"
@@ -92,7 +136,13 @@
       <!-- Day of Month -->
       <div class="flex flex-col gap-1">
         <label for="edit-rule-day-of-month">Day of Month (optional, 1–31)</label>
-        <p-inputnumber formControlName="dayOfMonth" inputId="edit-rule-day-of-month" [min]="1" [max]="31" aria-label="Day of month" />
+        <p-inputnumber
+          formControlName="dayOfMonth"
+          inputId="edit-rule-day-of-month"
+          [min]="1"
+          [max]="31"
+          aria-label="Day of month"
+        />
       </div>
 
       <!-- Categories -->
@@ -101,6 +151,7 @@
         <p-multiselect
           formControlName="categoryIds"
           [options]="categoryOptions()"
+          [appendTo]="'body'"
           inputId="edit-rule-categories"
           placeholder="Select categories"
           aria-label="Target categories"

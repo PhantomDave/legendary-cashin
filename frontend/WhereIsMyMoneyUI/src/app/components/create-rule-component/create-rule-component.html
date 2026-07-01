@@ -1,4 +1,5 @@
 <p-dialog
+  (onShow)="onShow()"
   (onHide)="onHide()"
   [(visible)]="visible"
   [closeOnEscape]="true"
@@ -12,7 +13,7 @@
       <!-- Name -->
       <div class="flex flex-col gap-1">
         <label for="rule-name">Rule Name *</label>
-        <input id="rule-name" formControlName="name" pInputText aria-label="Rule name" />
+        <input id="rule-name" #nameInput formControlName="name" pInputText aria-label="Rule name" />
         @if (isInvalid('name')) {
           <small class="text-red-500">Name is required.</small>
         }
@@ -24,6 +25,7 @@
         <p-select
           formControlName="matchType"
           [options]="matchTypeOptions"
+          [appendTo]="'body'"
           inputId="rule-match-type"
           aria-label="Match type"
         />
@@ -31,13 +33,23 @@
 
       <!-- Description Pattern -->
       <div class="flex flex-col gap-1">
-        <label for="rule-pattern">Description Pattern *</label>
-        <input id="rule-pattern" formControlName="descriptionPattern" pInputText aria-label="Description pattern" />
+        <label for="rule-pattern">Description Patterns *</label>
+        <textarea
+          id="rule-pattern"
+          formControlName="descriptionPattern"
+          rows="4"
+          class="p-inputtext p-component w-full"
+          aria-label="Description patterns"
+          placeholder="One pattern per line"
+        ></textarea>
         @if (isInvalid('descriptionPattern')) {
-          <small class="text-red-500">Pattern is required.</small>
+          <small class="text-red-500">At least one pattern is required.</small>
         }
-        @if (ruleService.error()) {
-          <small class="text-red-500">{{ ruleService.error() }}</small>
+        <small class="text-color-secondary"
+          >Use one pattern per line. A rule matches if any pattern matches.</small
+        >
+        @if (error()) {
+          <small class="text-red-500">{{ error() }}</small>
         }
       </div>
 
@@ -45,11 +57,25 @@
       <div class="flex gap-4">
         <div class="flex flex-col gap-1 flex-1">
           <label for="rule-min-amount">Min Amount</label>
-          <p-inputnumber formControlName="minAmount" inputId="rule-min-amount" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" aria-label="Minimum amount" />
+          <p-inputnumber
+            formControlName="minAmount"
+            inputId="rule-min-amount"
+            mode="decimal"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            aria-label="Minimum amount"
+          />
         </div>
         <div class="flex flex-col gap-1 flex-1">
           <label for="rule-max-amount">Max Amount</label>
-          <p-inputnumber formControlName="maxAmount" inputId="rule-max-amount" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" aria-label="Maximum amount" />
+          <p-inputnumber
+            formControlName="maxAmount"
+            inputId="rule-max-amount"
+            mode="decimal"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            aria-label="Maximum amount"
+          />
         </div>
       </div>
 
@@ -60,6 +86,7 @@
           formControlName="budgetId"
           [options]="budgetOptions()"
           [showClear]="true"
+          [appendTo]="'body'"
           inputId="rule-budget"
           placeholder="Any budget"
           aria-label="Budget filter"
@@ -72,6 +99,7 @@
         <p-multiselect
           formControlName="daysOfWeek"
           [options]="dayOfWeekOptions"
+          [appendTo]="'body'"
           inputId="rule-days-of-week"
           placeholder="Any day"
           aria-label="Days of week"
@@ -81,7 +109,13 @@
       <!-- Day of Month -->
       <div class="flex flex-col gap-1">
         <label for="rule-day-of-month">Day of Month (optional, 1–31)</label>
-        <p-inputnumber formControlName="dayOfMonth" inputId="rule-day-of-month" [min]="1" [max]="31" aria-label="Day of month" />
+        <p-inputnumber
+          formControlName="dayOfMonth"
+          inputId="rule-day-of-month"
+          [min]="1"
+          [max]="31"
+          aria-label="Day of month"
+        />
       </div>
 
       <!-- Categories -->
@@ -90,6 +124,7 @@
         <p-multiselect
           formControlName="categoryIds"
           [options]="categoryOptions()"
+          [appendTo]="'body'"
           inputId="rule-categories"
           placeholder="Select categories"
           aria-label="Target categories"

@@ -38,6 +38,7 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
     public async Task<IReadOnlyList<TransactionResponse>> GetAllAsync()
     {
         return await db.Transactions
+            .Include(t => t.Categories)
             .Select(t => ToResponse(t))
             .ToListAsync();
     }
@@ -61,6 +62,7 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
     {
         return await db.Transactions
             .Where(t => t.AccountId == accountId)
+            .Include(t => t.Categories)
             .Select(t => ToResponse(t))
             .ToListAsync();
     }
@@ -69,6 +71,7 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
     {
         return await db.Transactions
             .Where(t => t.AccountId == accountId)
+            .Include(t => t.Categories)
             .OrderByDescending(t => t.Date)
             .ThenByDescending(t => t.Id)
             .Select(t => ToResponse(t))
@@ -79,6 +82,7 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
     {
         return await db.Transactions
             .Where(t => t.BudgetId == budgetId && t.AccountId == accountId)
+            .Include(t => t.Categories)
             .OrderByDescending(t => t.Date)
             .Select(t => ToResponse(t))
             .ToListAsync();
@@ -88,6 +92,7 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
     {
         return await db.Transactions
             .Where(t => t.BudgetId == budgetId && t.AccountId == accountId)
+            .Include(t => t.Categories)
             .OrderByDescending(t => t.Date)
             .ThenByDescending(t => t.Id)
             .Select(t => ToResponse(t))
@@ -112,6 +117,7 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
     {
         return await db.Transactions
             .Where(t => t.AccountId == accountId && t.BudgetId == budgetId && t.Date >= from && t.Date <= to)
+            .Include(t => t.Categories)
             .OrderByDescending(t => t.Date)
             .ThenByDescending(t => t.Id)
             .Select(t => ToResponse(t))
@@ -122,6 +128,7 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
     {
         return await db.Transactions
             .Where(t => t.AccountId == accountId)
+            .Include(t => t.Categories)
             .Select(t => ToResponse(t))
             .ToListAsync();
     }
@@ -130,6 +137,7 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
     {
         return await db.Transactions
             .Where(t => t.AccountId == accountId && t.Date >= startDate && t.Date <= endDate)
+            .Include(t => t.Categories)
             .Select(t => ToResponse(t))
             .ToListAsync();
     }
@@ -138,6 +146,7 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
     {
         return await db.Transactions
             .Where(t => t.AccountId == accountId && t.Categories.Any(c => c.Id == categoryId))
+            .Include(t => t.Categories)
             .Select(t => ToResponse(t))
             .ToListAsync();
     }

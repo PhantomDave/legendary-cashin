@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   inject,
   input,
   model,
@@ -8,6 +9,7 @@ import {
   output,
   signal,
   SimpleChanges,
+  ViewChild,
 } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Button } from 'primeng/button';
@@ -17,11 +19,10 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { CheckboxModule } from 'primeng/checkbox';
-import { PrimeTemplate } from 'primeng/api';
 import { RuleService } from '../../services/rule.service';
 import { CategoryService } from '../../services/category.service';
 import { BudgetService } from '../../services/budget.service';
-import { Rule, MatchType } from '../../models/rule/Rule';
+import { Rule, MatchType, UpdateRuleRequest } from '../../models/rule/Rule';
 
 @Component({
   selector: 'app-edit-rule-component',
@@ -34,7 +35,6 @@ import { Rule, MatchType } from '../../models/rule/Rule';
     MultiSelectModule,
     CheckboxModule,
     ReactiveFormsModule,
-    PrimeTemplate,
   ],
   templateUrl: './edit-rule-component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -43,6 +43,7 @@ export class EditRuleComponent implements OnChanges {
   visible = model<boolean>(false);
   readonly rule = input<Rule | null>(null);
   readonly updated = output<Rule>();
+  @ViewChild('editNameInput') private readonly editNameInput?: ElementRef<HTMLInputElement>;
 
   private readonly fb = inject(FormBuilder);
   private readonly ruleService = inject(RuleService);
@@ -50,6 +51,7 @@ export class EditRuleComponent implements OnChanges {
   private readonly budgetService = inject(BudgetService);
 
   readonly isLoading = this.ruleService.isLoading;
+  readonly error = this.ruleService.error;
   readonly categoryOptions = signal<{ label: string; value: number }[]>([]);
   readonly budgetOptions = signal<{ label: string; value: number }[]>([]);
 
@@ -78,7 +80,10 @@ export class EditRuleComponent implements OnChanges {
     budgetId: [null as number | null],
     daysOfWeek: new FormControl<number[] | null>(null),
     dayOfMonth: [null as number | null],
-    categoryIds: new FormControl<number[]>([], { nonNullable: true, validators: [Validators.required, Validators.minLength(1)] }),
+    categoryIds: new FormControl<number[]>([], {
+      nonNullable: true,
+      validators: [Validators.required, Validators.minLength(1)],
+    }),
     isActive: [true],
     priority: [1, [Validators.required, Validators.min(1)]],
   });
@@ -133,23 +138,29 @@ export class EditRuleComponent implements OnChanges {
     if (!r) return;
 
     const v = this.form.getRawValue();
-    const result = await this.ruleService.updateRule(r.id, {
+    const request: UpdateRuleRequest = {
       name: v.name!,
       matchType: v.matchType!,
       descriptionPattern: v.descriptionPattern!,
-      minAmount: v.minAmount ?? undefined,
-      maxAmount: v.maxAmount ?? undefined,
-      budgetId: v.budgetId ?? undefined,
-      daysOfWeek: v.daysOfWeek ?? undefined,
-      dayOfMonth: v.dayOfMonth ?? undefined,
       categoryIds: v.categoryIds,
       isActive: v.isActive ?? true,
       priority: v.priority ?? 1,
-    });
+      ...(v.minAmount != null ? { minAmount: v.minAmount } : {}),
+      ...(v.maxAmount != null ? { maxAmount: v.maxAmount } : {}),
+      ...(v.budgetId != null ? { budgetId: v.budgetId } : {}),
+      ...(v.daysOfWeek != null ? { daysOfWeek: v.daysOfWeek } : {}),
+      ...(v.dayOfMonth != null ? { dayOfMonth: v.dayOfMonth } : {}),
+    };
+
+    const result = await this.ruleService.updateRule(r.id, request);
 
     if (!result) return;
 
     this.visible.set(false);
     this.updated.emit(result);
+  }
+
+  protected onShow(): void {
+    queueMicrotask(() => this.editNameInput?.nativeElement.focus());
   }
 }

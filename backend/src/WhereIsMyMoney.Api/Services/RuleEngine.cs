@@ -29,15 +29,19 @@ public sealed class RuleEngine
         return true;
     }
 
-    internal static bool MatchesDescription(string description, string pattern, RuleMatchType matchType)
+    internal static bool MatchesDescription(string description, string patterns, RuleMatchType matchType)
     {
-        return matchType switch
+        IReadOnlyList<string> splitPatterns = SplitPatterns(patterns);
+        if (splitPatterns.Count == 0)
+            return false;
+
+        return splitPatterns.Any(pattern => matchType switch
         {
             RuleMatchType.Exact => string.Equals(description, pattern, StringComparison.OrdinalIgnoreCase),
             RuleMatchType.Partial => description.Contains(pattern, StringComparison.OrdinalIgnoreCase),
             RuleMatchType.Regex => MatchesRegex(description, pattern),
             _ => false,
-        };
+        });
     }
 
     internal static bool IsAmountInRange(decimal amount, decimal? min, decimal? max)
@@ -63,17 +67,37 @@ public sealed class RuleEngine
         return date.Day == dayOfMonth.Value;
     }
 
-    internal static bool IsValidRegex(string pattern)
+    internal static bool IsValidRegex(string patterns)
     {
-        try
-        {
-            _ = new Regex(pattern, RegexOptions.None, RegexTimeout);
-            return true;
-        }
-        catch (ArgumentException)
-        {
+        IReadOnlyList<string> splitPatterns = SplitPatterns(patterns);
+        if (splitPatterns.Count == 0)
             return false;
+
+        foreach (string pattern in splitPatterns)
+        {
+            try
+            {
+                _ = new Regex(pattern, RegexOptions.None, RegexTimeout);
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
         }
+
+        return true;
+    }
+
+    internal static IReadOnlyList<string> SplitPatterns(string? patterns)
+    {
+        if (string.IsNullOrWhiteSpace(patterns))
+            return [];
+
+        return patterns
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     private static bool MatchesRegex(string input, string pattern)

@@ -1,11 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   inject,
   model,
   output,
   OnInit,
   signal,
+  ViewChild,
 } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Button } from 'primeng/button';
@@ -14,11 +16,10 @@ import { InputText } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { MultiSelectModule } from 'primeng/multiselect';
-import { PrimeTemplate } from 'primeng/api';
 import { RuleService } from '../../services/rule.service';
 import { CategoryService } from '../../services/category.service';
 import { BudgetService } from '../../services/budget.service';
-import { Rule, MatchType } from '../../models/rule/Rule';
+import { Rule, MatchType, CreateRuleRequest } from '../../models/rule/Rule';
 import { Category } from '../../models/category/Category';
 import { Budget } from '../../models/budget/Budget';
 
@@ -32,7 +33,6 @@ import { Budget } from '../../models/budget/Budget';
     SelectModule,
     MultiSelectModule,
     ReactiveFormsModule,
-    PrimeTemplate,
   ],
   templateUrl: './create-rule-component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -40,6 +40,7 @@ import { Budget } from '../../models/budget/Budget';
 export class CreateRuleComponent implements OnInit {
   visible = model<boolean>(false);
   readonly created = output<Rule>();
+  @ViewChild('nameInput') private readonly nameInput?: ElementRef<HTMLInputElement>;
 
   private readonly fb = inject(FormBuilder);
   private readonly ruleService = inject(RuleService);
@@ -49,6 +50,7 @@ export class CreateRuleComponent implements OnInit {
   readonly categories = signal<Category[]>([]);
   readonly budgets = signal<Budget[]>([]);
   readonly isLoading = this.ruleService.isLoading;
+  readonly error = this.ruleService.error;
 
   readonly matchTypeOptions: { label: string; value: MatchType }[] = [
     { label: 'Exact', value: 'Exact' },
@@ -75,7 +77,10 @@ export class CreateRuleComponent implements OnInit {
     budgetId: [null as number | null],
     daysOfWeek: new FormControl<number[] | null>(null),
     dayOfMonth: [null as number | null],
-    categoryIds: new FormControl<number[]>([], { nonNullable: true, validators: [Validators.required, Validators.minLength(1)] }),
+    categoryIds: new FormControl<number[]>([], {
+      nonNullable: true,
+      validators: [Validators.required, Validators.minLength(1)],
+    }),
   });
 
   readonly categoryOptions = signal<{ label: string; value: number }[]>([]);
@@ -108,17 +113,19 @@ export class CreateRuleComponent implements OnInit {
     }
 
     const v = this.form.getRawValue();
-    const rule = await this.ruleService.createRule({
+    const request: CreateRuleRequest = {
       name: v.name!,
       matchType: v.matchType!,
       descriptionPattern: v.descriptionPattern!,
-      minAmount: v.minAmount ?? undefined,
-      maxAmount: v.maxAmount ?? undefined,
-      budgetId: v.budgetId ?? undefined,
-      daysOfWeek: v.daysOfWeek ?? undefined,
-      dayOfMonth: v.dayOfMonth ?? undefined,
       categoryIds: v.categoryIds,
-    });
+      ...(v.minAmount != null ? { minAmount: v.minAmount } : {}),
+      ...(v.maxAmount != null ? { maxAmount: v.maxAmount } : {}),
+      ...(v.budgetId != null ? { budgetId: v.budgetId } : {}),
+      ...(v.daysOfWeek != null ? { daysOfWeek: v.daysOfWeek } : {}),
+      ...(v.dayOfMonth != null ? { dayOfMonth: v.dayOfMonth } : {}),
+    };
+
+    const rule = await this.ruleService.createRule(request);
 
     if (!rule) return;
 
@@ -129,5 +136,9 @@ export class CreateRuleComponent implements OnInit {
 
   protected onHide(): void {
     this.form.reset({ matchType: 'Partial', categoryIds: [] });
+  }
+
+  protected onShow(): void {
+    queueMicrotask(() => this.nameInput?.nativeElement.focus());
   }
 }

@@ -6,13 +6,17 @@
 />
 
 <div class="flex justify-end mb-3">
-  <p-button (onClick)="openApply()" label="Apply to Existing" icon="pi pi-history" severity="secondary" />
+  <p-button
+    (onClick)="openApply()"
+    label="Apply to Existing"
+    icon="pi pi-history"
+    severity="secondary"
+  />
 </div>
 
 <p-table
   [value]="rules()?.items ?? []"
   [loading]="isLoading()"
-  [reorderableRows]="true"
   (onRowReorder)="onRowReorder($event)"
   dataKey="id"
   size="small"
@@ -113,10 +117,7 @@
 
 <p-confirmdialog />
 
-<app-create-rule-component
-  [(visible)]="showCreate"
-  (created)="onRuleCreated($event)"
-/>
+<app-create-rule-component [(visible)]="showCreate" (created)="onRuleCreated($event)" />
 
 <app-edit-rule-component
   [(visible)]="showEdit"
@@ -124,12 +125,6 @@
   (updated)="onRuleUpdated($event)"
 />
 
-<app-preview-rule-component
-  [(visible)]="showPreview"
-  [ruleId]="selectedRule()?.id ?? null"
-/>
+<app-preview-rule-component [(visible)]="showPreview" [ruleId]="selectedRule()?.id ?? null" />
 
-<app-apply-to-existing-component
-  [(visible)]="showApply"
-  (applied)="onApplied()"
-/>
+<app-apply-to-existing-component [(visible)]="showApply" (applied)="onApplied()" />

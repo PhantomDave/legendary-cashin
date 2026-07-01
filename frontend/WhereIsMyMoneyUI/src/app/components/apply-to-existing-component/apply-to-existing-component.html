@@ -13,6 +13,7 @@
         <p-datepicker
           formControlName="dateRange"
           selectionMode="range"
+          [appendTo]="'body'"
           inputId="apply-date-range"
           [showIcon]="true"
           [showButtonBar]="true"
@@ -26,16 +27,29 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <p-checkbox formControlName="overwriteExisting" [binary]="true" inputId="apply-overwrite" aria-label="Overwrite existing categories" />
+        <p-checkbox
+          formControlName="overwriteExisting"
+          [binary]="true"
+          inputId="apply-overwrite"
+          aria-label="Overwrite existing categories"
+        />
         <label for="apply-overwrite">Overwrite existing categories</label>
       </div>
 
       @if (previewLoaded()) {
-        <div class="p-3 rounded" style="background: var(--p-content-background); border: 1px solid var(--p-content-border-color)">
+        <div
+          class="p-3 rounded"
+          style="
+            background: var(--p-content-background);
+            border: 1px solid var(--p-content-border-color);
+          "
+        >
           @if (previewCount() === 0) {
             <p class="text-sm">No transactions would be affected.</p>
           } @else {
-            <p class="text-sm">Would apply rules to <strong>{{ previewCount() }}</strong> transaction(s).</p>
+            <p class="text-sm">
+              Would apply rules to <strong>{{ previewCount() }}</strong> transaction(s).
+            </p>
           }
         </div>
       }

@@ -68,6 +68,9 @@ public sealed class RuleStore(AppDbContext db, RuleEngine engine)
 
     public async Task<(bool Success, string? Error)> ValidateRuleAsync(CreateRuleRequest request)
     {
+        if (RuleEngine.SplitPatterns(request.DescriptionPattern).Count == 0)
+            return (false, "At least one description pattern is required.");
+
         if (request.MatchType == RuleMatchType.Regex && !RuleEngine.IsValidRegex(request.DescriptionPattern))
             return (false, "Regex pattern is invalid.");
 
@@ -306,11 +309,6 @@ public sealed class RuleStore(AppDbContext db, RuleEngine engine)
 
         if (rule.DayOfMonth.HasValue)
             query = query.Where(t => t.Date.Day == rule.DayOfMonth.Value);
-
-        if (rule.MatchType == RuleMatchType.Exact)
-            query = query.Where(t => t.Description.ToLower() == rule.DescriptionPattern.ToLower());
-        else if (rule.MatchType == RuleMatchType.Partial)
-            query = query.Where(t => t.Description.ToLower().Contains(rule.DescriptionPattern.ToLower()));
 
         List<Transaction> candidates = await query.OrderByDescending(t => t.Date).ThenByDescending(t => t.Id).ToListAsync();
 

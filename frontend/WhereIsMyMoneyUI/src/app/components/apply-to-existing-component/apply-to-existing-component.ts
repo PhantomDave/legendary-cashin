@@ -1,23 +1,15 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  model,
-  output,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, model, output, signal } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { DatePickerModule } from 'primeng/datepicker';
 import { CheckboxModule } from 'primeng/checkbox';
-import { PrimeTemplate } from 'primeng/api';
 import { RuleService } from '../../services/rule.service';
 import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-apply-to-existing-component',
-  imports: [Button, Dialog, DatePickerModule, CheckboxModule, ReactiveFormsModule, PrimeTemplate],
+  imports: [Button, Dialog, DatePickerModule, CheckboxModule, ReactiveFormsModule],
   templateUrl: './apply-to-existing-component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
