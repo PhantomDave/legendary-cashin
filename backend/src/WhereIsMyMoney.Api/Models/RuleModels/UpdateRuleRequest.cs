@@ -1,0 +1,16 @@
+namespace WhereIsMyMoney.Api.Models.RuleModels;
+
+public sealed class UpdateRuleRequest
+{
+    public required string Name { get; set; }
+    public MatchType MatchType { get; set; }
+    public required string DescriptionPattern { get; set; }
+    public decimal? MinAmount { get; set; }
+    public decimal? MaxAmount { get; set; }
+    public long? BudgetId { get; set; }
+    public int[]? DaysOfWeek { get; set; }
+    public int? DayOfMonth { get; set; }
+    public required int[] CategoryIds { get; set; }
+    public bool IsActive { get; set; }
+    public int Priority { get; set; }
+}

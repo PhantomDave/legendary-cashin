@@ -44,6 +44,8 @@ builder.Services.AddScoped<CategoryStore>();
 builder.Services.AddScoped<EnableBankingStore>();
 builder.Services.Configure<EnableBankingOptions>(builder.Configuration.GetSection("EnableBanking"));
 builder.Services.AddSingleton<EnableBankingAuthStateService>();
+builder.Services.AddScoped<RuleEngine>();
+builder.Services.AddScoped<RuleStore>();
 
 IConfigurationSection jwtSettings = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
