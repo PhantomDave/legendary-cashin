@@ -59,12 +59,12 @@ export class EnableBankingConnectionsComponent {
   private readonly confirmationService = inject(ConfirmationService);
   private readonly toast = inject(ToastService);
 
-  constructor() {
-    effect(() => {
-      this.loadIntegrations().then();
-      this.loadSessions().then();
-    });
-  }
+   constructor() {
+     effect(() => {
+       void this.loadIntegrations();
+       void this.loadSessions();
+     });
+   }
 
   async loadIntegrations(): Promise<void> {
     const integrations = await this.importService.getEnableBankingIntegrations();

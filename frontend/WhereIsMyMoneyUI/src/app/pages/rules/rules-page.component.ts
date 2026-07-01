@@ -49,6 +49,7 @@ export class RulesPageComponent {
   readonly currentPage = signal(1);
   readonly rows = signal(25);
   readonly first = signal(0);
+  private latestLoadRequestId = 0;
 
   readonly showCreate = signal(false);
   readonly showApply = signal(false);
@@ -62,10 +63,12 @@ export class RulesPageComponent {
     });
   }
 
-  private async loadRules(): Promise<void> {
-    const response = await this.ruleService.getRules(this.currentPage(), this.rows());
-    this.rules.set(response);
-  }
+   private async loadRules(): Promise<void> {
+     const requestId = ++this.latestLoadRequestId;
+     const response = await this.ruleService.getRules(this.currentPage(), this.rows());
+     if (requestId !== this.latestLoadRequestId) return;
+     this.rules.set(response);
+   }
 
   onPageChange(event: PaginatorState): void {
     this.first.set(event.first ?? 0);
