@@ -54,7 +54,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         modelBuilder.Entity<Transaction>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Description).HasMaxLength(256);
+            entity.Property(e => e.Description).HasMaxLength(1024);
             entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
             entity.Property(e => e.Date).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.ExternalRef).HasMaxLength(128);
@@ -78,7 +78,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         modelBuilder.Entity<RecurringTransaction>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.Property(e => e.Description).HasMaxLength(256);
+            entity.Property(e => e.Description).HasMaxLength(1024);
             entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
             entity.Property(e => e.CreatedAtUtc).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.UpdatedAtUtc).HasDefaultValueSql("CURRENT_TIMESTAMP");

@@ -138,7 +138,7 @@ public sealed class RulesController(RuleStore store) : ApiControllerBase
     public async Task<ActionResult<object>> ApplyToExistingAsync([FromBody] ApplyToExistingRequest request)
     {
         long accountId = GetAccountId();
-        int updated = await store.ApplyRulesToHistoricalAsync(accountId, request.FromDate, request.ToDate, request.OverwriteExisting);
+        int updated = await store.ApplyRulesToHistoricalAsync(accountId, request.OverwriteExisting);
         return Ok(new { updated });
     }
 
@@ -146,7 +146,7 @@ public sealed class RulesController(RuleStore store) : ApiControllerBase
     public async Task<ActionResult<object>> CountExistingAsync([FromBody] ApplyToExistingRequest request)
     {
         long accountId = GetAccountId();
-        int count = await store.CountHistoricalMatchAsync(accountId, request.FromDate, request.ToDate);
+        int count = await store.CountHistoricalMatchAsync(accountId, request.OverwriteExisting);
         return Ok(new { count });
     }
 }
