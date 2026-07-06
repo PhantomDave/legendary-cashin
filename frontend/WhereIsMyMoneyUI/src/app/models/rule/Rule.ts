@@ -48,7 +48,5 @@ export interface PatchRuleRequest {
 }
 
 export interface ApplyToExistingRequest {
-  fromDate: string;
-  toDate: string;
   overwriteExisting: boolean;
 }

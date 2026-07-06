@@ -15,7 +15,7 @@ public sealed class TransactionQueryRequest
     public int? CategoryId { get; init; }
     public bool? Uncategorized { get; init; }
 
-    [StringLength(256)]
+    [StringLength(1024)]
     public string? Description { get; init; }
 
     public decimal? Amount { get; init; }

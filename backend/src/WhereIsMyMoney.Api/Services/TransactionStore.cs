@@ -493,7 +493,6 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
 
             string description = (source.Description ?? string.Empty).Trim();
             if (description.Length == 0) description = "Enable Banking import";
-            if (description.Length > 256) description = description[..256];
 
             Transaction tx = new Transaction
             {

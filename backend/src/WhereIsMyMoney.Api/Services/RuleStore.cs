@@ -225,14 +225,14 @@ public sealed class RuleStore(AppDbContext db, RuleEngine engine)
         return [.. matched];
     }
 
-    public async Task<int> ApplyRulesToHistoricalAsync(long accountId, DateTime fromDate, DateTime toDate, bool overwrite)
+    public async Task<int> ApplyRulesToHistoricalAsync(long accountId, bool overwrite)
     {
         IReadOnlyList<Rule> activeRules = await GetActiveRulesByAccountIdAsync(accountId);
         if (activeRules.Count == 0) return 0;
 
         List<Transaction> transactions = await db.Transactions
             .Include(t => t.Categories)
-            .Where(t => t.AccountId == accountId && t.Date >= fromDate && t.Date <= toDate)
+            .Where(t => t.AccountId == accountId)
             .ToListAsync();
 
         // Load all account categories once to avoid an N+1 query inside the loop.
@@ -245,6 +245,9 @@ public sealed class RuleStore(AppDbContext db, RuleEngine engine)
 
         foreach (Transaction tx in transactions)
         {
+            if (!overwrite && tx.Categories.Count > 0)
+                continue;
+
             int[] matchedCategoryIds = GetMatchedCategoryIds(activeRules, tx);
             if (matchedCategoryIds.Length == 0) continue;
 
@@ -280,16 +283,19 @@ public sealed class RuleStore(AppDbContext db, RuleEngine engine)
         return updated;
     }
 
-    public async Task<int> CountHistoricalMatchAsync(long accountId, DateTime fromDate, DateTime toDate)
+    public async Task<int> CountHistoricalMatchAsync(long accountId, bool overwrite)
     {
         IReadOnlyList<Rule> activeRules = await GetActiveRulesByAccountIdAsync(accountId);
         if (activeRules.Count == 0) return 0;
 
         List<Transaction> transactions = await db.Transactions
-            .Where(t => t.AccountId == accountId && t.Date >= fromDate && t.Date <= toDate)
+            .Include(t => t.Categories)
+            .Where(t => t.AccountId == accountId)
             .ToListAsync();
 
-        return transactions.Count(tx => GetMatchedCategoryIds(activeRules, tx).Length > 0);
+        return transactions.Count(tx =>
+            (overwrite || tx.Categories.Count == 0)
+            && GetMatchedCategoryIds(activeRules, tx).Length > 0);
     }
 
     public async Task<PaginatedResponse<TransactionResponse>> PreviewRuleAsync(long ruleId, long accountId, PaginationRequest request)

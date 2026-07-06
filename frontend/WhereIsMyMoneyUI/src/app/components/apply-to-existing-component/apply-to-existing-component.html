@@ -8,23 +8,9 @@
 >
   <ng-template #content>
     <form (ngSubmit)="onApply()" [formGroup]="form" class="flex flex-col gap-4">
-      <div class="flex flex-col gap-1">
-        <label for="apply-date-range">Date Range *</label>
-        <p-datepicker
-          formControlName="dateRange"
-          selectionMode="range"
-          [appendTo]="'body'"
-          inputId="apply-date-range"
-          [showIcon]="true"
-          [showButtonBar]="true"
-          placeholder="Select date range"
-          aria-label="Date range"
-          styleClass="w-full"
-        />
-        @if (form.get('dateRange')?.invalid && form.get('dateRange')?.touched) {
-          <small class="text-red-500">Date range is required.</small>
-        }
-      </div>
+      <p class="text-sm" style="color: var(--p-text-muted-color)">
+        Rules will be applied across all transactions in this portfolio.
+      </p>
 
       <div class="flex items-center gap-2">
         <p-checkbox

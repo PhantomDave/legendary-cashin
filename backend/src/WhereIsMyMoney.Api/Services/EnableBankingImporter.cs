@@ -53,6 +53,9 @@ public class EnableBankingImporter(
     ILogger<EnableBankingImporter> logger,
     IServiceProvider serviceProvider) : BackgroundService
 {
+    // Enable Banking providers can reject wide transaction periods; keep calls in small windows.
+    private const int TransactionsWindowDays = 7;
+
     private readonly ILogger<EnableBankingImporter> _logger = logger;
     private readonly IServiceProvider _serviceProvider = serviceProvider;
     private readonly Channel<ImportJob> _importQueue = Channel.CreateUnbounded<ImportJob>();
@@ -261,54 +264,68 @@ public class EnableBankingImporter(
             {
                 try
                 {
-                    string? continuationKey = null;
-                    HashSet<string> seenContinuationKeys = [];
-                    int pageNumber = 0;
-
-                    while (true)
+                    int windowNumber = 0;
+                    foreach ((DateOnly windowFrom, DateOnly windowTo) in SplitDateRangeIntoWindows(
+                        dateFrom,
+                        dateTo,
+                        TransactionsWindowDays))
                     {
-                        pageNumber++;
+                        windowNumber++;
+                        string? continuationKey = null;
+                        HashSet<string> seenContinuationKeys = [];
+                        int pageNumber = 0;
 
-                        EnableBankingHalTransactions page =
-                            await integration.GetTransactionsAsync(uid, dateFrom, dateTo, continuationKey);
-
-                        _logger.LogInformation(
-                            "Fetched page {PageNumber} with {Count} transaction(s) for account {Uid} (session {SessionId})",
-                            pageNumber, page.Transactions.Count, uid, session.Id);
-
-                        fetched.AddRange(page.Transactions.Select(t => new ImportedTransaction(
-                            AccountUid: uid,
-                            SessionId: session.Id,
-                            IntegrationId: session.IntegrationId,
-                            OwnerAccountId: session.AccountId,
-                            TransactionId: t.TransactionId,
-                            EntryReference: t.EntryReference,
-                            Amount: t.TransactionAmount.Amount,
-                            Currency: t.TransactionAmount.Currency,
-                            CreditDebitIndicator: t.CreditDebitIndicator,
-                            Status: t.Status,
-                            BookingDateTime: t.BookingDateTime,
-                            BookingDate: t.BookingDate,
-                            ValueDateTime: t.ValueDateTime,
-                            ValueDate: t.ValueDate,
-                            Description: t.RemittanceInformation?.FirstOrDefault()
-                                         ?? t.CreditorName
-                                         ?? t.DebtorName,
-                            CreditorName: t.CreditorName,
-                            DebtorName: t.DebtorName)));
-
-                        if (string.IsNullOrWhiteSpace(page.ContinuationKey))
-                            break;
-
-                        if (!seenContinuationKeys.Add(page.ContinuationKey))
+                        while (true)
                         {
-                            _logger.LogWarning(
-                                "Stopping pagination for account {Uid} in session {SessionId} because continuation key repeated.",
-                                uid, session.Id);
-                            break;
-                        }
+                            pageNumber++;
 
-                        continuationKey = page.ContinuationKey;
+                            EnableBankingHalTransactions page =
+                                await integration.GetTransactionsAsync(uid, windowFrom, windowTo, continuationKey);
+
+                            _logger.LogInformation(
+                                "Fetched window {WindowNumber} ({WindowFrom} -> {WindowTo}) page {PageNumber} with {Count} transaction(s) for account {Uid} (session {SessionId})",
+                                windowNumber,
+                                windowFrom,
+                                windowTo,
+                                pageNumber,
+                                page.Transactions.Count,
+                                uid,
+                                session.Id);
+
+                            fetched.AddRange(page.Transactions.Select(t => new ImportedTransaction(
+                                AccountUid: uid,
+                                SessionId: session.Id,
+                                IntegrationId: session.IntegrationId,
+                                OwnerAccountId: session.AccountId,
+                                TransactionId: t.TransactionId,
+                                EntryReference: t.EntryReference,
+                                Amount: t.TransactionAmount.Amount,
+                                Currency: t.TransactionAmount.Currency,
+                                CreditDebitIndicator: t.CreditDebitIndicator,
+                                Status: t.Status,
+                                BookingDateTime: t.BookingDateTime,
+                                BookingDate: t.BookingDate,
+                                ValueDateTime: t.ValueDateTime,
+                                ValueDate: t.ValueDate,
+                                Description: t.RemittanceInformation?.FirstOrDefault()
+                                             ?? t.CreditorName
+                                             ?? t.DebtorName,
+                                CreditorName: t.CreditorName,
+                                DebtorName: t.DebtorName)));
+
+                            if (string.IsNullOrWhiteSpace(page.ContinuationKey))
+                                break;
+
+                            if (!seenContinuationKeys.Add(page.ContinuationKey))
+                            {
+                                _logger.LogWarning(
+                                    "Stopping pagination for account {Uid} in session {SessionId} because continuation key repeated.",
+                                    uid, session.Id);
+                                break;
+                            }
+
+                            continuationKey = page.ContinuationKey;
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -343,6 +360,29 @@ public class EnableBankingImporter(
             summary.TotalFetched, summary.TotalInserted, summary.TotalSkipped);
 
         return summary;
+    }
+
+    private static IEnumerable<(DateOnly WindowFrom, DateOnly WindowTo)> SplitDateRangeIntoWindows(
+        DateOnly from,
+        DateOnly to,
+        int maxWindowDays)
+    {
+        if (from > to)
+            yield break;
+
+        if (maxWindowDays <= 0)
+            throw new ArgumentOutOfRangeException(nameof(maxWindowDays), "maxWindowDays must be greater than 0.");
+
+        DateOnly cursor = from;
+        while (cursor <= to)
+        {
+            DateOnly windowTo = cursor.AddDays(maxWindowDays - 1);
+            if (windowTo > to)
+                windowTo = to;
+
+            yield return (cursor, windowTo);
+            cursor = windowTo.AddDays(1);
+        }
     }
 
     private async Task ProcessQueuedJobAsync(ImportJob job)
