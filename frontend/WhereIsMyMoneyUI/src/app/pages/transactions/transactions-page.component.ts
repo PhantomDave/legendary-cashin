@@ -8,11 +8,9 @@ import {
   signal,
 } from '@angular/core';
 import { CreateTransactionComponent } from '../../components/create-transaction-component/create-transaction-component';
-import { PaginatedTableComponent } from '../../components/paginated-table/paginated-table.component';
 import { SectionHeaderComponent } from '../../components/section-header/section-header.component';
 import { BudgetService } from '../../services/budget.service';
 import { PatchTransactionRequest, TransactionService } from '../../services/transaction.service';
-import { PaginatorState } from 'primeng/paginator';
 import { Transaction } from '../../models/transaction/Transaction';
 import { PaginatedResponse } from '../../models/api/paginated-response.model';
 import { Inplace } from 'primeng/inplace';
@@ -29,6 +27,7 @@ import { ConfirmationService } from 'primeng/api';
 import { ToastService } from '../../services/toast.service';
 import { ConfirmDialog } from 'primeng/confirmdialog';
 import { TooltipModule } from 'primeng/tooltip';
+import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 
 interface EditValues {
   date: Date;
@@ -38,10 +37,19 @@ interface EditValues {
   categoryIds: number[];
 }
 
+interface TransactionQueryFilters {
+  date: string | null;
+  budgetId: number | null;
+  categoryId: number | null;
+  uncategorized: boolean;
+  description: string;
+  amount: number | null;
+  amountMatchMode: string | null;
+}
+
 @Component({
   selector: 'app-transactions-page',
   imports: [
-    PaginatedTableComponent,
     SectionHeaderComponent,
     CreateTransactionComponent,
     CurrencyPipe,
@@ -56,6 +64,7 @@ interface EditValues {
     MultiSelectModule,
     ConfirmDialog,
     TooltipModule,
+    TableModule,
   ],
   providers: [ConfirmationService],
   templateUrl: './transactions-page.component.html',
@@ -63,6 +72,7 @@ interface EditValues {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TransactionsPageComponent {
+  private readonly uncategorizedCategoryFilterValue = -1;
   private readonly transactionService = inject(TransactionService);
   private readonly budgetService = inject(BudgetService);
   private readonly categoryService = inject(CategoryService);
@@ -78,6 +88,26 @@ export class TransactionsPageComponent {
   readonly categoryOptions = computed(() =>
     this.categories().map((category) => ({ label: category.name, value: category.id })),
   );
+  readonly categoryFilterOptions = computed(() => [
+    { label: 'Uncategorized', value: this.uncategorizedCategoryFilterValue },
+    ...this.categoryOptions(),
+  ]);
+  readonly amountMatchModes: Array<{ label: string; value: string }> = [
+    { label: 'Equals', value: 'equals' },
+    { label: 'Greater than', value: 'gt' },
+    { label: 'Greater or equal', value: 'gte' },
+    { label: 'Less than', value: 'lt' },
+    { label: 'Less or equal', value: 'lte' },
+  ];
+  readonly activeFilters = signal<TransactionQueryFilters>({
+    date: null,
+    budgetId: null,
+    categoryId: null,
+    uncategorized: false,
+    description: '',
+    amount: null,
+    amountMatchMode: null,
+  });
   private readonly confirmationService = inject(ConfirmationService);
   private readonly toast = inject(ToastService);
   readonly transactions = signal<PaginatedResponse<Transaction> | null>(null);
@@ -97,6 +127,15 @@ export class TransactionsPageComponent {
         this.lastBudgetId = null;
         this.first = 0;
         this.currentPage = 1;
+        this.activeFilters.set({
+          date: null,
+          budgetId: null,
+          categoryId: null,
+          uncategorized: false,
+          description: '',
+          amount: null,
+          amountMatchMode: null,
+        });
         this.transactionService.clearTransactions();
         this.transactions.set(null);
         return;
@@ -106,12 +145,48 @@ export class TransactionsPageComponent {
         this.lastBudgetId = budgetId;
         this.first = 0;
         this.currentPage = 1;
+        this.activeFilters.set({
+          date: null,
+          budgetId: null,
+          categoryId: null,
+          uncategorized: false,
+          description: '',
+          amount: null,
+          amountMatchMode: null,
+        });
       }
 
       void this.loadTransactions(budgetId);
-
-      console.log('Categories changed', this.categories(), this.categoryOptions());
     });
+  }
+
+  onLazyLoad(event: TableLazyLoadEvent): void {
+    const first = event.first ?? 0;
+    const rows = event.rows ?? this.rows;
+    this.first = first;
+    this.rows = rows;
+    this.currentPage = Math.floor(first / rows) + 1;
+    const selectedCategory = this.readFilterNumber(event, 'categoryId');
+    const uncategorized = selectedCategory === this.uncategorizedCategoryFilterValue;
+
+    this.activeFilters.set({
+      date: this.readFilterDate(event, 'date'),
+      budgetId: this.readFilterNumber(event, 'budgetId'),
+      categoryId: uncategorized ? null : selectedCategory,
+      uncategorized,
+      description: this.readFilterString(event, 'description'),
+      amount: this.readFilterNumber(event, 'amount'),
+      amountMatchMode: this.readFilterMatchMode(event, 'amount'),
+    });
+
+    const budgetId = this.selectedBudget()?.id;
+    if (budgetId == null) {
+      this.transactionService.clearTransactions();
+      this.transactions.set(null);
+      return;
+    }
+
+    void this.loadTransactions(budgetId);
   }
 
   getEditingValue(id: number): EditValues {
@@ -124,6 +199,7 @@ export class TransactionsPageComponent {
       budgetId,
       this.currentPage,
       this.rows,
+      this.activeFilters(),
     );
 
     if (requestId !== this.latestLoadRequestId) {
@@ -221,30 +297,60 @@ export class TransactionsPageComponent {
     void this.loadTransactions(budgetId);
   }
 
-  onPageChange($event: PaginatorState): void {
-    this.first = $event.first ?? 0;
-    this.rows = $event.rows ?? this.rows;
-    this.currentPage = Math.floor(this.first / this.rows) + 1;
-
-    const budgetId = this.selectedBudget()?.id;
-
-    if (budgetId == null) {
-      this.transactionService.clearTransactions();
-      this.transactions.set(null);
-      return;
-    }
-
-    void this.loadTransactions(budgetId);
-  }
-
   private resolveCategoryName(id: number): string {
     return this.categories().find((category) => category.id === id)?.name ?? `${id}`;
   }
 
   private async loadCategories(): Promise<void> {
     const response = await this.categoryService.getCategories(1, 100);
-    console.log('Loaded categories', response?.items);
     this.categories.set(response?.items ?? []);
+  }
+
+  private readFilterString(event: TableLazyLoadEvent, field: string): string {
+    const metadata = this.getFilterMetadata(event, field);
+    const value = metadata?.value;
+    return typeof value === 'string' ? value.trim() : '';
+  }
+
+  private readFilterNumber(event: TableLazyLoadEvent, field: string): number | null {
+    const metadata = this.getFilterMetadata(event, field);
+    const value = metadata?.value;
+    return typeof value === 'number' ? value : null;
+  }
+
+  private readFilterDate(event: TableLazyLoadEvent, field: string): string | null {
+    const metadata = this.getFilterMetadata(event, field);
+    const value = metadata?.value;
+    if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+      return null;
+    }
+
+    return value.toISOString();
+  }
+
+  private readFilterMatchMode(event: TableLazyLoadEvent, field: string): string | null {
+    const metadata = this.getFilterMetadata(event, field);
+    return metadata?.matchMode ?? null;
+  }
+
+  private getFilterMetadata(
+    event: TableLazyLoadEvent,
+    field: string,
+  ): { value?: unknown; matchMode?: string } | null {
+    const filter = event.filters?.[field];
+    if (!filter) {
+      return null;
+    }
+
+    if (Array.isArray(filter)) {
+      return filter[0] ?? null;
+    }
+
+    if ('constraints' in filter && Array.isArray(filter.constraints)) {
+      return filter.constraints[0] ?? null;
+    }
+
+    return filter;
   }
 
   private buildPatch(item: Transaction, values: EditValues): PatchTransactionRequest {

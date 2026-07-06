@@ -152,6 +152,33 @@ public sealed class EnableBankingStore(AppDbContext db, EncryptionService encryp
         return session;
     }
 
+    /// <summary>
+    /// Refreshes an existing bank connection when it matches the same account,
+    /// integration and ASPSP; otherwise creates a new one.
+    /// </summary>
+    public async Task<EnableBankingBankSession> UpsertBankSessionAsync(EnableBankingBankSession session)
+    {
+        EnableBankingBankSession? existing = await db.EnableBankingSessions
+            .Where(s => s.AccountId == session.AccountId
+                     && s.IntegrationId == session.IntegrationId
+                     && s.AspspName == session.AspspName
+                     && s.AspspCountry == session.AspspCountry)
+            .OrderByDescending(s => s.CreatedAtUtc)
+            .FirstOrDefaultAsync();
+
+        if (existing is null)
+        {
+            return await CreateBankSessionAsync(session);
+        }
+
+        existing.SessionId = session.SessionId;
+        existing.ValidUntil = session.ValidUntil;
+        existing.AccountsJson = session.AccountsJson;
+
+        await db.SaveChangesAsync();
+        return existing;
+    }
+
     public async Task<IReadOnlyList<EnableBankingBankSession>> GetBankSessionsByAccountIdAsync(long accountId)
     {
         return await db.EnableBankingSessions

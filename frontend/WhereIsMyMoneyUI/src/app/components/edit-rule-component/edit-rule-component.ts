@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   inject,
   input,
   model,
@@ -9,7 +8,6 @@ import {
   output,
   signal,
   SimpleChanges,
-  ViewChild,
 } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Button } from 'primeng/button';
@@ -43,7 +41,6 @@ export class EditRuleComponent implements OnChanges {
   visible = model<boolean>(false);
   readonly rule = input<Rule | null>(null);
   readonly updated = output<Rule>();
-  @ViewChild('editNameInput') private readonly editNameInput?: ElementRef<HTMLInputElement>;
 
   private readonly fb = inject(FormBuilder);
   private readonly ruleService = inject(RuleService);
@@ -158,9 +155,5 @@ export class EditRuleComponent implements OnChanges {
 
     this.visible.set(false);
     this.updated.emit(result);
-  }
-
-  protected onShow(): void {
-    queueMicrotask(() => this.editNameInput?.nativeElement.focus());
   }
 }

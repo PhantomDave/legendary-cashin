@@ -7,7 +7,7 @@ import {
   TemplateRef,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { TableModule } from 'primeng/table';
+import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { PaginatorState } from 'primeng/paginator';
 
 @Component({
@@ -20,6 +20,7 @@ import { PaginatorState } from 'primeng/paginator';
 export class PaginatedTableComponent {
   readonly items = input<unknown[]>([]);
   readonly loading = input(false);
+  readonly lazy = input(true);
   readonly rows = input(10);
   readonly first = input(0);
   readonly totalRecords = input(0);
@@ -35,8 +36,13 @@ export class PaginatedTableComponent {
     contentChild.required<TemplateRef<{ $implicit: unknown }>>('bodyTemplate');
 
   readonly pageChange = output<PaginatorState>();
+  readonly lazyLoadChange = output<TableLazyLoadEvent>();
 
   onPageChange(event: PaginatorState): void {
     this.pageChange.emit(event);
+  }
+
+  onLazyLoad(event: TableLazyLoadEvent): void {
+    this.lazyLoadChange.emit(event);
   }
 }

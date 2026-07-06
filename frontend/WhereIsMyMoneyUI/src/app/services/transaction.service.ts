@@ -36,6 +36,16 @@ export interface PatchScheduledTransactionRequest {
   isActive?: boolean;
 }
 
+export interface GetTransactionsByBudgetFilters {
+  date?: string | null;
+  budgetId?: number | null;
+  categoryId?: number | null;
+  uncategorized?: boolean;
+  description?: string;
+  amount?: number | null;
+  amountMatchMode?: string | null;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -72,16 +82,47 @@ export class TransactionService {
   async getTransactions(
     pageNumber: number = 1,
     pageSize: number = this.defaultPageSize,
+    filters?: GetTransactionsByBudgetFilters,
   ): Promise<PaginatedResponse<Transaction> | null> {
     this.isLoading.set(true);
     this.error.set(null);
 
     try {
+      const params: Record<string, string | number | boolean> = {
+        pageNumber,
+        pageSize,
+      };
+
+      if (filters?.date) {
+        params['date'] = filters.date;
+      }
+
+      if (typeof filters?.budgetId === 'number') {
+        params['budgetId'] = filters.budgetId;
+      }
+
+      if (typeof filters?.categoryId === 'number') {
+        params['categoryId'] = filters.categoryId;
+      }
+
+      if (filters?.uncategorized === true) {
+        params['uncategorized'] = true;
+      }
+
+      if (filters?.description) {
+        params['description'] = filters.description;
+      }
+
+      if (typeof filters?.amount === 'number') {
+        params['amount'] = filters.amount;
+      }
+
+      if (filters?.amountMatchMode) {
+        params['amountMatchMode'] = filters.amountMatchMode;
+      }
+
       const response = await this.api.get<PaginatedResponse<Transaction>>(this.baseApiUrl, {
-        params: {
-          pageNumber,
-          pageSize,
-        },
+        params,
       });
 
       this.transactions.set(response.items);
@@ -98,18 +139,49 @@ export class TransactionService {
     budgetId: number,
     pageNumber: number = 1,
     pageSize: number = this.defaultPageSize,
+    filters?: GetTransactionsByBudgetFilters,
   ): Promise<PaginatedResponse<Transaction> | null> {
     this.isLoading.set(true);
     this.error.set(null);
 
     try {
+      const params: Record<string, string | number | boolean> = {
+        pageNumber,
+        pageSize,
+      };
+
+      if (filters?.date) {
+        params['date'] = filters.date;
+      }
+
+      if (typeof filters?.budgetId === 'number') {
+        params['budgetId'] = filters.budgetId;
+      }
+
+      if (typeof filters?.categoryId === 'number') {
+        params['categoryId'] = filters.categoryId;
+      }
+
+      if (filters?.uncategorized === true) {
+        params['uncategorized'] = true;
+      }
+
+      if (filters?.description) {
+        params['description'] = filters.description;
+      }
+
+      if (typeof filters?.amount === 'number') {
+        params['amount'] = filters.amount;
+      }
+
+      if (filters?.amountMatchMode) {
+        params['amountMatchMode'] = filters.amountMatchMode;
+      }
+
       const response = await this.api.get<PaginatedResponse<Transaction>>(
         `${this.baseApiUrl}budget/${budgetId}`,
         {
-          params: {
-            pageNumber,
-            pageSize,
-          },
+          params,
         },
       );
 

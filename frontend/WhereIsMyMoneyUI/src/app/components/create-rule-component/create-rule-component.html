@@ -1,19 +1,18 @@
 <p-dialog
-  (onShow)="onShow()"
   (onHide)="onHide()"
   [(visible)]="visible"
   [closeOnEscape]="true"
   [draggable]="false"
   [modal]="true"
   header="Create Rule"
-  style="width: 560px"
+  [style]="{ width: '560px' }"
 >
   <ng-template #content>
     <form (ngSubmit)="onSubmit()" [formGroup]="form" class="flex flex-col gap-4">
       <!-- Name -->
       <div class="flex flex-col gap-1">
         <label for="rule-name">Rule Name *</label>
-        <input id="rule-name" #nameInput formControlName="name" pInputText aria-label="Rule name" />
+        <input id="rule-name" formControlName="name" pInputText aria-label="Rule name" />
         @if (isInvalid('name')) {
           <small class="text-red-500">Name is required.</small>
         }

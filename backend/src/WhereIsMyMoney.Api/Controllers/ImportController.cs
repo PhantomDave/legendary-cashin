@@ -209,8 +209,13 @@ namespace WhereIsMyMoney.Api.Controllers
                     AccountsJson = System.Text.Json.JsonSerializer.Serialize(accountUids),
                 };
 
-                await store.CreateBankSessionAsync(bankSession);
-                return Ok(new { message = "Bank connected successfully", sessionId = session.SessionId });
+                EnableBankingBankSession updatedSession = await store.UpsertBankSessionAsync(bankSession);
+                return Ok(new
+                {
+                    message = "Bank connected successfully",
+                    sessionId = session.SessionId,
+                    bankSessionId = updatedSession.Id
+                });
             }
             catch (Exception ex)
             {
@@ -339,7 +344,7 @@ namespace WhereIsMyMoney.Api.Controllers
                     AccountsJson = System.Text.Json.JsonSerializer.Serialize(accountUids),
                 };
 
-                EnableBankingBankSession createdSession = await store.CreateBankSessionAsync(bankSession);
+                EnableBankingBankSession createdSession = await store.UpsertBankSessionAsync(bankSession);
                 Guid jobId = importer.EnqueueImportRequest(
                     from: forceSyncData.Value.StartDate,
                     to: forceSyncData.Value.EndDate,

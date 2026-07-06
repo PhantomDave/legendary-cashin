@@ -1,17 +1,20 @@
 # AGENTS Guide
 
 ## Scope and precedence
+
 - This root guide applies to the whole repo (`/workspace`).
 - Frontend-specific AI rules in `frontend/WhereIsMyMoneyUI/AGENTS.md` are stricter for files under that app.
 - Treat `README.md` at repo root as stale (it references old `CashinService` paths).
 
 ## Repo map (what exists now)
+
 - `backend/src/WhereIsMyMoney.Api`: ASP.NET Core API (`net10.0`) with EF Core + PostgreSQL + JWT auth.
 - `backend/src/WhereIsMyMoney.Import`: CLI/web hybrid import tool for Enable Banking (external API + browser callback flow).
 - `frontend/WhereIsMyMoneyUI`: Angular 22 + PrimeNG SPA using Bun.
 - `docker-compose.yml`: local Postgres (`cashin/cashin_dev_password`) used by API default connection string.
 
 ## Critical runtime flow
+
 - API startup (`backend/src/WhereIsMyMoney.Api/Program.cs`) runs `db.Database.MigrateAsync()` automatically; schema is migration-driven.
 - All API controllers are globally protected via `app.MapControllers().RequireAuthorization()`.
 - Public endpoints must be explicitly marked `[AllowAnonymous]` (currently account registration + authentication).
@@ -20,6 +23,7 @@
 - Frontend API base URL is `http://localhost:5080` in `frontend/WhereIsMyMoneyUI/src/environments/environment.ts`.
 
 ## Backend patterns to follow
+
 - Controllers are thin; business/data logic lives in stores (`Services/*Store.cs`) using `AppDbContext`.
 - Account scoping comes from JWT claim in `ApiControllerBase.GetAccountId()` (`NameIdentifier` or `sub`).
 - For account-owned resources, controller sets/validates `AccountId` before store calls (see `BudgetsController`, `TransactionsController`, `CategoriesController`).
@@ -29,12 +33,14 @@
 - Sensitive credentials (Enable Banking certificates/keys) are stored encrypted via `EncryptionService`; never persist them as plaintext.
 
 ## Frontend patterns to follow
+
 - Use app-level services with Angular signals for state/loading/error (`budget.service.ts`, `transaction.service.ts`, `account.service.ts`).
 - Route protection is centralized in `guards/auth.guard.ts` + cookie presence checks.
 - HTTP is wrapped by `ApiService` (promise-based over `HttpClient` + `firstValueFrom`), not direct per-component `HttpClient` calls.
 - UI is standalone-component based with PrimeNG configured in `app.config.ts`.
 
 ## Developer workflows
+
 - Start DB:
   - `docker compose up -d db`
 - Run API:
@@ -49,10 +55,11 @@
   - `cd frontend/WhereIsMyMoneyUI && bun run build && bun run test -- --watch=false`
 
 ## Integration points and gotchas
+
 - CORS in API currently allows only `http://localhost:4200` with credentials.
 - JWT settings are in `backend/src/WhereIsMyMoney.Api/appsettings.json`; local key is a placeholder and should be overridden per environment.
 - Import tool depends on Enable Banking credentials (`backend/src/WhereIsMyMoney.Import/appsettings.json`) and external tools (ngrok/browser callback).
 - The import flow currently hardcodes an ngrok redirect override in `WhereIsMyMoney.Import/Program.cs`; keep this in mind when debugging auth callbacks. The frontend `ImportCallbackPageComponent` handles the OAuth redirect and hands control back to `ImportService`.
 - See `AUTO_IMPORT_FLOW.md` for the full Enable Banking OAuth flow diagram, session lifecycle, deduplication strategy, and background job scheduling.
 - Route shape note: `accounts/{id:long}` and `accounts/{email}` coexist in `AccountsController`; keep constraints explicit when adding routes.
-
+- PrimeNG dialog gotcha: for frontend dialogs, do not pass CSS strings to the dialog `style` input. Use object binding (for example `[style]="{ width: '560px' }"`) or `styleClass`, otherwise Angular `NgStyle` can throw at runtime and produce a mask-first/no-content-until-click behavior.

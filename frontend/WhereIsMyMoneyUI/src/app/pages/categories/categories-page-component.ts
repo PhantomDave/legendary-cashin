@@ -144,5 +144,6 @@ export class CategoriesPageComponent {
 
   onCategoryCreated() {
     void this.loadCategories();
+    this.isCreateCategoryModalVisible = false;
   }
 }

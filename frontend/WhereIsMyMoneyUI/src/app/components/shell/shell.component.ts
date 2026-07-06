@@ -19,6 +19,8 @@ import { Budget } from '../../models/budget/Budget';
 import { AccountService } from '../../services/account.service';
 import { BudgetService } from '../../services/budget.service';
 import { CreateBudgetComponent } from '../create-budget-component/create-budget-component';
+import { TooltipModule } from 'primeng/tooltip';
+import { TransactionService } from '../../services/transaction.service';
 
 @Component({
   selector: 'app-shell',
@@ -30,6 +32,7 @@ import { CreateBudgetComponent } from '../create-budget-component/create-budget-
     FormsModule,
     CreateBudgetComponent,
     AvatarModule,
+    TooltipModule,
   ],
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
@@ -41,10 +44,12 @@ export class ShellComponent implements OnInit {
   readonly themeIcon = computed(() => (this.isDarkMode() ? 'pi pi-moon' : 'pi pi-sun'));
   readonly displayName = signal('User');
   readonly userInitial = computed(() => this.displayName().trim().charAt(0).toUpperCase() || 'U');
+  readonly uncategorizedTransactionsCount = signal(0);
   isCreateModalVisible: boolean = false;
   private readonly document = inject(DOCUMENT);
   private readonly router = inject(Router);
   private readonly budgetService = inject(BudgetService);
+  private readonly transactionService = inject(TransactionService);
   readonly selectedBudget = this.budgetService.selectedBudget;
   readonly budgets = this.budgetService.budgets;
   private readonly accountService = inject(AccountService);
@@ -61,7 +66,12 @@ export class ShellComponent implements OnInit {
       selectedBudgetId = parseInt(selectedBudget);
     }
     const budgetResponse = await this.budgetService.getBudgets();
+    const transactionsResponse = await this.transactionService.getTransactions();
     const budgets = budgetResponse?.items ?? [];
+    const transactions = transactionsResponse?.items ?? [];
+    this.uncategorizedTransactionsCount.set(
+      transactions.filter((transaction) => transaction.categoryIds.length === 0).length,
+    );
 
     if (
       selectedBudgetId != null &&
@@ -134,5 +144,11 @@ export class ShellComponent implements OnInit {
     } catch {
       return null;
     }
+  }
+
+  getTooltipText(): string {
+    const count = this.uncategorizedTransactionsCount();
+
+    return `You have at least ${count} transaction${count !== 1 ? 's' : ''} without category, which may affect your budget analysis. Please review and categorize them.`;
   }
 }

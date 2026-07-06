@@ -59,3 +59,9 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Avoid relying on raw surface scale tokens (for example `--p-surface-0`) for app chrome, because they may not provide the expected dark-mode contrast.
 - When a semantic token is unavailable, use a semantic token with a fallback value, e.g. `var(--p-content-background, var(--p-surface-0))`.
 - Keep dark mode wired through the configured selector and never hard-force light colors with non-reactive global overrides.
+
+## PrimeNG Dialog Guardrails
+
+- For PrimeNG `p-dialog`, do not pass a plain string to the dialog `style` input (for example `style="width: 560px"`).
+- Use an object style binding instead, for example `[style]="{ width: '560px' }"`, or use `styleClass` for sizing/layout.
+- Reason: the dialog `style` input is consumed by Angular `NgStyle`; string values can trigger runtime errors and cause a mask/blur to appear before dialog content renders.

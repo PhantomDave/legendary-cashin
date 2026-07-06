@@ -39,7 +39,7 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
 
     [HttpGet]
     [ProducesResponseType<PaginatedResponse<TransactionResponse>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<PaginatedResponse<TransactionResponse>>> GetMyTransactions([FromQuery] PaginationRequest request)
+    public async Task<ActionResult<PaginatedResponse<TransactionResponse>>> GetMyTransactions([FromQuery] TransactionQueryRequest request)
     {
         long accountId = GetAccountId();
         return Ok(await store.GetAllByAccountIdPaginatedAsync(accountId, request));
@@ -48,7 +48,9 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
     [HttpGet("budget/{id:int}")]
     [ProducesResponseType<PaginatedResponse<TransactionResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PaginatedResponse<TransactionResponse>>> GetByBudget(int id, [FromQuery] PaginationRequest request)
+    public async Task<ActionResult<PaginatedResponse<TransactionResponse>>> GetByBudget(
+        int id,
+        [FromQuery] TransactionQueryRequest request)
     {
         long accountId = GetAccountId();
         PaginatedResponse<TransactionResponse> transactions = await store.GetByBudgetPaginatedAsync(id, accountId, request);

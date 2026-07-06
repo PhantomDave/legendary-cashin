@@ -5,27 +5,158 @@
   (ctaClicked)="addTransaction()"
 />
 
-<app-paginated-table
-  [items]="transactions()?.items ?? []"
-  [totalRecords]="transactions()?.totalCount ?? 0"
+<p-table
+  [value]="transactions()?.items ?? []"
   [loading]="isLoading()"
+  [paginator]="true"
+  [lazy]="true"
   [rows]="rows"
   [first]="first"
+  [totalRecords]="transactions()?.totalCount ?? 0"
   [rowsPerPageOptions]="rowsPerPageOptions"
-  (pageChange)="onPageChange($event)"
+  [showCurrentPageReport]="true"
+  [currentPageReportTemplate]="'Showing {first} to {last} of {totalRecords} entries'"
+  [tableStyle]="{ 'min-width': '50rem' }"
+  [size]="'small'"
+  [showGridlines]="true"
+  (onLazyLoad)="onLazyLoad($event)"
 >
-  <ng-template #headerTemplate>
+  <ng-template pTemplate="header">
     <tr>
-      <th>Date</th>
-      <th>Budget</th>
-      <th>Categories</th>
-      <th>Description</th>
-      <th>Amount</th>
+      <th>
+        Date
+        <p-columnFilter
+          field="date"
+          display="menu"
+          matchMode="equals"
+          [showOperator]="false"
+          [showAddButton]="false"
+          [showMatchModes]="false"
+          [showApplyButton]="true"
+          [showClearButton]="true"
+        >
+          <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+            <p-datepicker
+              [ngModel]="value"
+              (ngModelChange)="filter($event)"
+              appendTo="body"
+              dateFormat="dd/mm/yy"
+              placeholder="Date"
+              size="small"
+            />
+          </ng-template>
+        </p-columnFilter>
+      </th>
+      <th>
+        Budget
+        <p-columnFilter
+          field="budgetId"
+          display="menu"
+          matchMode="equals"
+          [showOperator]="false"
+          [showAddButton]="false"
+          [showMatchModes]="false"
+          [showApplyButton]="true"
+          [showClearButton]="true"
+        >
+          <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+            <p-select
+              [ngModel]="value"
+              (ngModelChange)="filter($event)"
+              [options]="budgets()"
+              appendTo="body"
+              [showClear]="true"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="All budgets"
+              size="small"
+              styleClass="table-filter-control"
+            />
+          </ng-template>
+        </p-columnFilter>
+      </th>
+      <th>
+        Categories
+        <p-columnFilter
+          field="categoryId"
+          display="menu"
+          matchMode="equals"
+          [showOperator]="false"
+          [showAddButton]="false"
+          [showMatchModes]="false"
+          [showApplyButton]="true"
+          [showClearButton]="true"
+        >
+          <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+            <p-select
+              [ngModel]="value"
+              (ngModelChange)="filter($event)"
+              [options]="categoryFilterOptions()"
+              appendTo="body"
+              [showClear]="true"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="All categories"
+              size="small"
+              styleClass="table-filter-control"
+            />
+          </ng-template>
+        </p-columnFilter>
+      </th>
+      <th>
+        Description
+        <p-columnFilter
+          field="description"
+          display="menu"
+          matchMode="contains"
+          [showOperator]="false"
+          [showAddButton]="false"
+          [showMatchModes]="false"
+          [showApplyButton]="true"
+          [showClearButton]="true"
+        >
+          <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+            <input
+              pInputText
+              [ngModel]="value"
+              (ngModelChange)="filter($event)"
+              placeholder="Search description"
+              class="table-filter-control"
+            />
+          </ng-template>
+        </p-columnFilter>
+      </th>
+      <th>
+        Amount
+        <p-columnFilter
+          field="amount"
+          display="menu"
+          matchMode="equals"
+          [showOperator]="false"
+          [showAddButton]="false"
+          [showMatchModes]="true"
+          [showApplyButton]="true"
+          [showClearButton]="true"
+          [matchModeOptions]="amountMatchModes"
+        >
+          <ng-template pTemplate="filter" let-value let-filter="filterCallback">
+            <p-inputnumber
+              [ngModel]="value"
+              (ngModelChange)="filter($event)"
+              [maxFractionDigits]="2"
+              [minFractionDigits]="2"
+              mode="decimal"
+              placeholder="Amount"
+              inputStyleClass="table-filter-control"
+            />
+          </ng-template>
+        </p-columnFilter>
+      </th>
       <th>Actions</th>
     </tr>
   </ng-template>
 
-  <ng-template #bodyTemplate let-item>
+  <ng-template pTemplate="body" let-item>
     <tr>
       <td>
         <p-inplace
@@ -34,12 +165,14 @@
           (onDeactivate)="cancelEdit(item.id)"
           [closable]="false"
         >
-          <ng-template #display>{{ item.date | date: 'short' }}</ng-template>
+          <ng-template #display>{{ item.date | date: 'dd/MM/yyyy HH:mm' }}</ng-template>
           <ng-template #content>
             <div class="inline-edit-cell">
               <p-datepicker
                 [(ngModel)]="getEditingValue(item.id).date"
                 [appendTo]="'body'"
+                dateFormat="dd/mm/yy"
+                hourFormat="24"
                 [showTime]="true"
                 ariaLabel="Transaction date"
                 size="small"
@@ -84,6 +217,7 @@
               <p-select
                 [(ngModel)]="getEditingValue(item.id).budgetId"
                 [options]="budgets()"
+                appendTo="body"
                 ariaLabel="Transaction budget"
                 optionLabel="name"
                 optionValue="id"
@@ -131,6 +265,7 @@
                 [(ngModel)]="getEditingValue(item.id).categoryIds"
                 [options]="categoryOptions()"
                 ariaLabel="Transaction categories"
+                appendTo="body"
                 optionLabel="label"
                 optionValue="value"
                 placeholder="Select categories"
@@ -246,7 +381,7 @@
       </td>
     </tr>
   </ng-template>
-</app-paginated-table>
+</p-table>
 
 <p-confirmDialog></p-confirmDialog>
 

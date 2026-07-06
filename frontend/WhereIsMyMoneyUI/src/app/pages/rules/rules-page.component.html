@@ -117,14 +117,27 @@
 
 <p-confirmdialog />
 
-<app-create-rule-component [(visible)]="showCreate" (created)="onRuleCreated($event)" />
+<app-create-rule-component
+  [visible]="showCreate"
+  (visibleChange)="showCreate = $event"
+  (created)="onRuleCreated($event)"
+/>
 
 <app-edit-rule-component
-  [(visible)]="showEdit"
-  [rule]="selectedRule()"
+  [visible]="showEdit"
+  (visibleChange)="showEdit = $event"
+  [rule]="selectedRule"
   (updated)="onRuleUpdated($event)"
 />
 
-<app-preview-rule-component [(visible)]="showPreview" [ruleId]="selectedRule()?.id ?? null" />
+<app-preview-rule-component
+  [visible]="showPreview"
+  (visibleChange)="showPreview = $event"
+  [ruleId]="selectedRule?.id ?? null"
+/>
 
-<app-apply-to-existing-component [(visible)]="showApply" (applied)="onApplied()" />
+<app-apply-to-existing-component
+  [visible]="showApply"
+  (visibleChange)="showApply = $event"
+  (applied)="onApplied()"
+/>
