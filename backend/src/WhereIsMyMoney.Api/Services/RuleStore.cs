@@ -235,6 +235,11 @@ public sealed class RuleStore(AppDbContext db, RuleEngine engine)
             .Where(t => t.AccountId == accountId && t.Date >= fromDate && t.Date <= toDate)
             .ToListAsync();
 
+        // Load all account categories once to avoid an N+1 query inside the loop.
+        Dictionary<int, Category> categoryMap = await db.Categories
+            .Where(c => c.AccountId == accountId)
+            .ToDictionaryAsync(c => c.Id);
+
         int updated = 0;
         int batchSize = 0;
 
@@ -254,11 +259,11 @@ public sealed class RuleStore(AppDbContext db, RuleEngine engine)
                 targetIds = matchedCategoryIds.Where(id => !existing.Contains(id)).Concat(existing).ToList();
             }
 
-            List<Category> categories = await db.Categories
-                .Where(c => c.AccountId == accountId && targetIds.Contains(c.Id))
-                .ToListAsync();
+            tx.Categories = targetIds
+                .Where(categoryMap.ContainsKey)
+                .Select(id => categoryMap[id])
+                .ToList();
 
-            tx.Categories = categories;
             updated++;
             batchSize++;
 
@@ -293,7 +298,9 @@ public sealed class RuleStore(AppDbContext db, RuleEngine engine)
         if (rule is null)
             return new PaginatedResponse<TransactionResponse>([], request.PageNumber, request.PageSize, 0, 0);
 
-        // For exact and partial, push filter to DB; for regex, load all and filter in-memory.
+        // Push budget, amount, and day-of-month filters to the database.
+        // Description matching (exact, partial, regex) and day-of-week are evaluated
+        // in-memory via engine.Evaluate after fetching the candidates.
         IQueryable<Transaction> query = db.Transactions
             .Include(t => t.Categories)
             .Where(t => t.AccountId == accountId);
