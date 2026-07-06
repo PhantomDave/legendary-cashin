@@ -54,7 +54,7 @@ public sealed class TransactionsController(TransactionStore store, BudgetStore b
     {
         long accountId = GetAccountId();
         PaginatedResponse<TransactionResponse> transactions = await store.GetByBudgetPaginatedAsync(id, accountId, request);
-        return transactions.TotalCount == 0
+        return transactions.TotalCount == 0 && !request.HasFilters
             ? NotFound(new { message = $"Transactions for budget '{id}' were not found." })
             : Ok(transactions);
     }

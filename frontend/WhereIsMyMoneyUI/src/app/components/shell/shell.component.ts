@@ -66,12 +66,11 @@ export class ShellComponent implements OnInit {
       selectedBudgetId = parseInt(selectedBudget);
     }
     const budgetResponse = await this.budgetService.getBudgets();
-    const transactionsResponse = await this.transactionService.getTransactions();
+    const uncategorizedResponse = await this.transactionService.getTransactions(1, 1, {
+      uncategorized: true,
+    });
     const budgets = budgetResponse?.items ?? [];
-    const transactions = transactionsResponse?.items ?? [];
-    this.uncategorizedTransactionsCount.set(
-      transactions.filter((transaction) => transaction.categoryIds.length === 0).length,
-    );
+    this.uncategorizedTransactionsCount.set(uncategorizedResponse?.totalCount ?? 0);
 
     if (
       selectedBudgetId != null &&

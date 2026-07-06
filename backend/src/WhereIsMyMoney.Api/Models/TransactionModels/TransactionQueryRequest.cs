@@ -22,4 +22,12 @@ public sealed class TransactionQueryRequest
 
     [RegularExpression("^(equals|gt|gte|lt|lte)$")]
     public string? AmountMatchMode { get; init; }
+
+    public bool HasFilters =>
+        Date.HasValue
+        || BudgetId.HasValue
+        || CategoryId.HasValue
+        || (Uncategorized.HasValue && Uncategorized.Value)
+        || !string.IsNullOrEmpty(Description)
+        || Amount.HasValue;
 }
