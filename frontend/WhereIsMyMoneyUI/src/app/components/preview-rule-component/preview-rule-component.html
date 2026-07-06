@@ -4,7 +4,7 @@
   [draggable]="false"
   [modal]="true"
   header="Preview Matching Transactions"
-  style="width: 800px"
+  [style]="{ width: '800px' }"
 >
   <ng-template #content>
     @if (isLoading()) {

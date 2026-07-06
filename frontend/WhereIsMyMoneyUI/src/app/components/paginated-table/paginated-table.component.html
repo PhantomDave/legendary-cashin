@@ -2,7 +2,7 @@
   [value]="items()"
   [loading]="loading()"
   [paginator]="true"
-  [lazy]="true"
+  [lazy]="lazy()"
   [rows]="rows()"
   [first]="first()"
   [totalRecords]="totalRecords()"
@@ -13,6 +13,7 @@
   [showGridlines]="showGridlines()"
   [currentPageReportTemplate]="currentPageReportTemplate()"
   (onPage)="onPageChange($event)"
+  (onLazyLoad)="onLazyLoad($event)"
 >
   <ng-template pTemplate="header">
     <ng-container [ngTemplateOutlet]="headerTemplate()" />

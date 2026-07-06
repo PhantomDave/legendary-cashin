@@ -67,7 +67,9 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
             .ToListAsync();
     }
 
-    public async Task<PaginatedResponse<TransactionResponse>> GetAllByAccountIdPaginatedAsync(long accountId, PaginationRequest request)
+    public async Task<PaginatedResponse<TransactionResponse>> GetAllByAccountIdPaginatedAsync(
+        long accountId,
+        PaginationRequest request)
     {
         return await db.Transactions
             .Where(t => t.AccountId == accountId)
@@ -76,6 +78,27 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
             .ThenByDescending(t => t.Id)
             .Select(t => ToResponse(t))
             .ToPaginatedResponseAsync(request);
+    }
+
+    public async Task<PaginatedResponse<TransactionResponse>> GetAllByAccountIdPaginatedAsync(
+        long accountId,
+        TransactionQueryRequest request)
+    {
+        IQueryable<Transaction> query = db.Transactions
+            .Where(t => t.AccountId == accountId)
+            .Include(t => t.Categories);
+
+        query = ApplyTransactionFilters(query, request);
+
+        return await query
+            .OrderByDescending(t => t.Date)
+            .ThenByDescending(t => t.Id)
+            .Select(t => ToResponse(t))
+            .ToPaginatedResponseAsync(new PaginationRequest
+            {
+                PageNumber = request.PageNumber,
+                PageSize = request.PageSize
+            });
     }
 
     public async Task<IReadOnlyList<TransactionResponse>> GetByBudgetAsync(int budgetId, long accountId)
@@ -88,15 +111,73 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
             .ToListAsync();
     }
 
-    public async Task<PaginatedResponse<TransactionResponse>> GetByBudgetPaginatedAsync(int budgetId, long accountId, PaginationRequest request)
+    public async Task<PaginatedResponse<TransactionResponse>> GetByBudgetPaginatedAsync(
+        int budgetId,
+        long accountId,
+        TransactionQueryRequest request)
     {
-        return await db.Transactions
+        IQueryable<Transaction> query = db.Transactions
             .Where(t => t.BudgetId == budgetId && t.AccountId == accountId)
-            .Include(t => t.Categories)
+            .Include(t => t.Categories);
+
+        query = ApplyTransactionFilters(query, request);
+
+        return await query
             .OrderByDescending(t => t.Date)
             .ThenByDescending(t => t.Id)
             .Select(t => ToResponse(t))
-            .ToPaginatedResponseAsync(request);
+            .ToPaginatedResponseAsync(new PaginationRequest
+            {
+                PageNumber = request.PageNumber,
+                PageSize = request.PageSize
+            });
+    }
+
+    private static IQueryable<Transaction> ApplyTransactionFilters(
+        IQueryable<Transaction> query,
+        TransactionQueryRequest request)
+    {
+
+        if (request.BudgetId.HasValue)
+        {
+            query = query.Where(t => t.BudgetId == request.BudgetId.Value);
+        }
+
+        if (request.Uncategorized == true)
+        {
+            query = query.Where(t => !t.Categories.Any());
+        }
+        else if (request.CategoryId.HasValue)
+        {
+            query = query.Where(t => t.Categories.Any(c => c.Id == request.CategoryId.Value));
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Description))
+        {
+            string description = request.Description.Trim();
+            query = query.Where(t => t.Description.Contains(description));
+        }
+
+        if (request.Date.HasValue)
+        {
+            DateTime start = request.Date.Value.Date;
+            DateTime end = start.AddDays(1);
+            query = query.Where(t => t.Date >= start && t.Date < end);
+        }
+
+        if (request.Amount.HasValue)
+        {
+            query = request.AmountMatchMode switch
+            {
+                "gt" => query.Where(t => t.Amount > request.Amount.Value),
+                "gte" => query.Where(t => t.Amount >= request.Amount.Value),
+                "lt" => query.Where(t => t.Amount < request.Amount.Value),
+                "lte" => query.Where(t => t.Amount <= request.Amount.Value),
+                _ => query.Where(t => t.Amount == request.Amount.Value)
+            };
+        }
+
+        return query;
     }
 
     public async Task<long?> GetLatestBudgetIdForAccountAsync(long accountId)

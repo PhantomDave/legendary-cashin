@@ -1,13 +1,11 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   inject,
   model,
   output,
   OnInit,
   signal,
-  ViewChild,
 } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Button } from 'primeng/button';
@@ -40,7 +38,6 @@ import { Budget } from '../../models/budget/Budget';
 export class CreateRuleComponent implements OnInit {
   visible = model<boolean>(false);
   readonly created = output<Rule>();
-  @ViewChild('nameInput') private readonly nameInput?: ElementRef<HTMLInputElement>;
 
   private readonly fb = inject(FormBuilder);
   private readonly ruleService = inject(RuleService);
@@ -136,9 +133,5 @@ export class CreateRuleComponent implements OnInit {
 
   protected onHide(): void {
     this.form.reset({ matchType: 'Partial', categoryIds: [] });
-  }
-
-  protected onShow(): void {
-    queueMicrotask(() => this.nameInput?.nativeElement.focus());
   }
 }

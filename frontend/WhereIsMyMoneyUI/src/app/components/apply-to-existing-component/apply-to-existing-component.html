@@ -4,7 +4,7 @@
   [draggable]="false"
   [modal]="true"
   header="Apply Rules to Existing Transactions"
-  style="width: 480px"
+  [style]="{ width: '480px' }"
 >
   <ng-template #content>
     <form (ngSubmit)="onApply()" [formGroup]="form" class="flex flex-col gap-4">

@@ -125,6 +125,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                   .OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(e => e.AccountId);
             entity.HasIndex(e => e.IntegrationId);
+            entity.HasIndex(e => new { e.AccountId, e.IntegrationId, e.AspspName, e.AspspCountry })
+                  .IsUnique()
+                  .HasDatabaseName("IX_EnableBankingSessions_AccountId_IntegrationId_AspspName_AspspCountry");
         });
 
         modelBuilder.Entity<Rule>(entity =>

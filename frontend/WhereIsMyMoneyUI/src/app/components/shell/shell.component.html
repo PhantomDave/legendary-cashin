@@ -1,8 +1,12 @@
 <div class="app-shell">
   <div class="app-shell__body">
     <aside aria-label="Main navigation" class="app-shell__sidebar flex h-full flex-col">
-      <a class="app-shell__brand" routerLink="/dashboard">Where Is My Money</a>
-
+      <div class="flex justify-between content-center flex-wrap">
+        <a class="app-shell__brand" routerLink="/dashboard">Where Is My Money</a>
+        @if (this.uncategorizedTransactionsCount() > 0) {
+          <i [pTooltip]="getTooltipText()" class="pi pi-info-circle"></i>
+        }
+      </div>
       <div class="mt-2 min-h-0 flex-1 overflow-y-auto pr-1">
         <p-panelmenu [model]="navItems" class="app-shell__panelmenu" />
       </div>

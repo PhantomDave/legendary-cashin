@@ -147,7 +147,8 @@ public class EnableBankingImporter(
     /// When <paramref name="sessionId"/> is provided only that session is processed;
     /// otherwise every active session across all accounts is processed.
     /// <paramref name="from"/> overrides the per-session <c>LastImportAtUtc</c> as the start date.
-    /// Sessions whose <c>LastImportAtUtc</c> is null are skipped when <paramref name="from"/> is also null.
+    /// Every run also enforces a rolling 7-day overlap window to avoid missing
+    /// late-settling transactions from the bank provider.
     /// </summary>
     public async Task<ImportResult> StartImportRequest(
         DateTime? from = null,
@@ -180,6 +181,7 @@ public class EnableBankingImporter(
         }
 
         DateOnly dateTo = DateOnly.FromDateTime((to ?? DateTime.UtcNow));
+        DateOnly rollingWindowStart = dateTo.AddDays(-7);
         List<SessionImportResult> results = [];
 
         foreach (EnableBankingBankSession session in sessions)
@@ -196,10 +198,21 @@ public class EnableBankingImporter(
             }
             else
             {
+                dateFrom = rollingWindowStart;
                 _logger.LogInformation(
-                    "Session {SessionId} has never been imported and no explicit 'from' was provided — skipping",
-                    session.Id);
-                continue;
+                    "Session {SessionId} has never been imported; defaulting import range start to rolling 7-day window ({From})",
+                    session.Id,
+                    dateFrom);
+            }
+
+            if (dateFrom > rollingWindowStart)
+            {
+                _logger.LogInformation(
+                    "Session {SessionId}: widening import range start from {OriginalFrom} to rolling 7-day window start {WindowFrom}",
+                    session.Id,
+                    dateFrom,
+                    rollingWindowStart);
+                dateFrom = rollingWindowStart;
             }
 
             if (dateFrom > dateTo)

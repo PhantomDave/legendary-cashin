@@ -51,11 +51,11 @@ export class RulesPageComponent {
   readonly first = signal(0);
   private latestLoadRequestId = 0;
 
-  readonly showCreate = signal(false);
-  readonly showApply = signal(false);
-  readonly selectedRule = signal<Rule | null>(null);
-  readonly showEdit = signal(false);
-  readonly showPreview = signal(false);
+  showCreate = false;
+  showApply = false;
+  selectedRule: Rule | null = null;
+  showEdit = false;
+  showPreview = false;
 
   constructor() {
     effect(() => {
@@ -63,12 +63,12 @@ export class RulesPageComponent {
     });
   }
 
-   private async loadRules(): Promise<void> {
-     const requestId = ++this.latestLoadRequestId;
-     const response = await this.ruleService.getRules(this.currentPage(), this.rows());
-     if (requestId !== this.latestLoadRequestId) return;
-     this.rules.set(response);
-   }
+  private async loadRules(): Promise<void> {
+    const requestId = ++this.latestLoadRequestId;
+    const response = await this.ruleService.getRules(this.currentPage(), this.rows());
+    if (requestId !== this.latestLoadRequestId) return;
+    this.rules.set(response);
+  }
 
   onPageChange(event: PaginatorState): void {
     this.first.set(event.first ?? 0);
@@ -77,21 +77,21 @@ export class RulesPageComponent {
   }
 
   openCreate(): void {
-    this.showCreate.set(true);
+    this.showCreate = true;
   }
 
   openApply(): void {
-    this.showApply.set(true);
+    this.showApply = true;
   }
 
   openEdit(rule: Rule): void {
-    this.selectedRule.set(rule);
-    this.showEdit.set(true);
+    this.selectedRule = rule;
+    this.showEdit = true;
   }
 
   openPreview(rule: Rule): void {
-    this.selectedRule.set(rule);
-    this.showPreview.set(true);
+    this.selectedRule = rule;
+    this.showPreview = true;
   }
 
   async toggleActive(rule: Rule): Promise<void> {
@@ -107,31 +107,33 @@ export class RulesPageComponent {
     }
   }
 
-   async onRowReorder(event: TableRowReorderEvent): Promise<void> {
-     const items = this.rules()?.items;
-     if (!items) return;
-     const dragIndex = event.dragIndex;
-     const dropIndex = event.dropIndex;
-     if (dragIndex === undefined || dropIndex === undefined) return;
+  async onRowReorder(event: TableRowReorderEvent): Promise<void> {
+    const items = this.rules()?.items;
+    if (!items) return;
+    const dragIndex = event.dragIndex;
+    const dropIndex = event.dropIndex;
+    if (dragIndex === undefined || dropIndex === undefined) return;
 
-     const reordered = [...items];
-     const [moved] = reordered.splice(dragIndex, 1);
+    const reordered = [...items];
+    const [moved] = reordered.splice(dragIndex, 1);
 
-     if (moved === undefined) return;
+    if (moved === undefined) return;
 
-     reordered.splice(dropIndex, 0, moved);
+    reordered.splice(dropIndex, 0, moved);
 
-     // Update priority field to reflect new positions (1-indexed)
-     const reorderedWithUpdatedPriority = reordered.map((rule, index) => ({
-       ...rule,
-       priority: index + 1,
-     }));
+    // Update priority field to reflect new positions (1-indexed)
+    const reorderedWithUpdatedPriority = reordered.map((rule, index) => ({
+      ...rule,
+      priority: index + 1,
+    }));
 
-     this.rules.update((current) => (current ? { ...current, items: reorderedWithUpdatedPriority } : current));
+    this.rules.update((current) =>
+      current ? { ...current, items: reorderedWithUpdatedPriority } : current,
+    );
 
-     const ruleIds = reorderedWithUpdatedPriority.map((r) => r.id);
-     await this.ruleService.reorderRules(ruleIds);
-   }
+    const ruleIds = reorderedWithUpdatedPriority.map((r) => r.id);
+    await this.ruleService.reorderRules(ruleIds);
+  }
 
   onRuleCreated(rule: Rule): void {
     this.rules.update((current) => {

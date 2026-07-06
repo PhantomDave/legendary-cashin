@@ -2,9 +2,7 @@
   "name": "Legendary Cashin",
 
   // Self-contained devcontainer compose with hardcoded development values
-  "dockerComposeFile": [
-    "docker-compose.devcontainer.yml"
-  ],
+  "dockerComposeFile": ["docker-compose.devcontainer.yml"],
   "service": "devcontainer",
   "runServices": ["db", "devcontainer"],
   "workspaceFolder": "/workspace",
@@ -47,7 +45,7 @@
           "editor.defaultFormatter": "ms-dotnettools.csharp"
         },
         "dotnet.defaultSolution": "backend/WhereIsMyMoney.slnx",
-        "terminal.integrated.defaultProfile.linux": "bash"
+        "terminal.integrated.defaultProfile.linux": "fish"
       }
     },
     "jetbrains": {
