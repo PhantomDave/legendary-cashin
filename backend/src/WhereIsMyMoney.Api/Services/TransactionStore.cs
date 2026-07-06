@@ -383,6 +383,13 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
         // Load active rules once for the entire batch.
         IReadOnlyList<Rule> activeRules = await ruleStore.GetActiveRulesByAccountIdAsync(accountId);
 
+        // Load all account categories once to avoid an N+1 query inside the loop.
+        Dictionary<int, Category> categoryMap = activeRules.Count > 0
+            ? await db.Categories
+                .Where(c => c.AccountId == accountId)
+                .ToDictionaryAsync(c => c.Id)
+            : [];
+
         int inserted = 0;
         int skipped = 0;
 
@@ -423,9 +430,10 @@ public sealed class TransactionStore(AppDbContext db, RuleStore ruleStore) : ISt
                 int[] matchedCategoryIds = ruleStore.GetMatchedCategoryIds(activeRules, tx);
                 if (matchedCategoryIds.Length > 0)
                 {
-                    tx.Categories = await db.Categories
-                        .Where(c => c.AccountId == accountId && matchedCategoryIds.Contains(c.Id))
-                        .ToListAsync();
+                    tx.Categories = matchedCategoryIds
+                        .Where(categoryMap.ContainsKey)
+                        .Select(id => categoryMap[id])
+                        .ToList();
                 }
             }
 

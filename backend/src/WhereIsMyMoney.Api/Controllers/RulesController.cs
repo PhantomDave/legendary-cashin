@@ -81,6 +81,25 @@ public sealed class RulesController(RuleStore store) : ApiControllerBase
     public async Task<ActionResult<RuleResponse>> PatchAsync(long id, [FromBody] PatchRuleRequest request)
     {
         long accountId = GetAccountId();
+        RuleResponse? existing = await store.GetByIdAndAccountAsync(id, accountId);
+        if (existing is null) return NotFound();
+
+        // Build a validation proxy from the merged state so ownership and regex checks
+        // cover the patched fields (CategoryIds, BudgetId, DescriptionPattern, MatchType).
+        CreateRuleRequest proxy = new CreateRuleRequest
+        {
+            AccountId = accountId,
+            Name = request.Name ?? existing.Name,
+            MatchType = request.MatchType ?? existing.MatchType,
+            DescriptionPattern = request.DescriptionPattern ?? existing.DescriptionPattern,
+            CategoryIds = request.CategoryIds ?? existing.CategoryIds,
+            BudgetId = request.BudgetId ?? existing.BudgetId,
+        };
+
+        (bool valid, string? error) = await store.ValidateRuleAsync(proxy);
+        if (!valid)
+            return BadRequest(new { message = error });
+
         bool success = await store.PatchAsync(id, accountId, request);
         if (!success) return NotFound();
 
